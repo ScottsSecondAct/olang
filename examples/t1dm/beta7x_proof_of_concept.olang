@@ -1,0 +1,74 @@
+// BETA-7-X: CRISPR-mediated immune evasion for T1DM
+// Goal: minimal PD-L1 up / MHC-I down edit that achieves T-Cell anergy
+// while preserving Beta-Cell insulin secretion (FBA steady-state).
+
+import bio.IsletState
+import bio.TCellState
+import std.collections.List
+
+agent AnalystAgent {
+  capability ReadScrnaSeq, ReadGenomicIndex
+  stream hpapFeed : Stream<IsletState>
+  rule "parse-hpap" {
+    when hpapFeed.hasData -> { let snapshot = hpapFeed.next(); emit snapshot }
+  }
+}
+
+agent StrategistAgent {
+  capability InvokeSMTSolver, ReadGenomicIndex
+  stream isletIn : Stream<IsletState>
+}
+
+agent SimulatorAgent {
+  capability RunKMCSimulation, RunFBASimulation, RunParallelKernel,
+             WriteSimulationResult
+  stream isletIn : Stream<IsletState>
+}
+
+agent ExecutorAgent {
+  capability SynthesizeCRISPR, ControlLabRobotics, ReadLabSensor
+  stream approvedEdit : Stream<CrisprEdit>
+}
+
+proof Beta7XSafety {
+  invariant NoInsulinLoss {
+    always(when BetaCell.isEdited == true -> eventually(BetaCell.isSecreting == true))
+  }
+  invariant TCellAnergy {
+    always(when TCell.state == Engaged ->
+      eventually(TCell.state == Anergic) within 3600.0)
+  }
+  invariant NoOffTargetEdits {
+    always(when CrisprEdit.applied == true -> CrisprEdit.siteId in ApprovedSiteList)
+  }
+}
+
+solver Beta7XOptimiser {
+  variable pdl1Delta : float in 0.0 ..= 5.0
+  variable mhc1Delta : float in 0.0 ..= 1.0
+  satisfy { pdl1Delta > 1.5; mhc1Delta < 0.6; }
+  minimize pdl1Delta + (1.0 - mhc1Delta)
+}
+
+let baseline : IsletState = AnalystAgent.hpapFeed.latest()
+let editCandidates : List<CrisprEdit> =
+  StrategistAgent.generateCandidates(baseline, Beta7XOptimiser)
+
+let results =
+  editCandidates
+  ~> filter(c => c.safetyScore > 0.95)
+  ~> map(candidate => {
+       let simulated = baseline ||| SimulatorAgent.runKMC(candidate, 1_000_000)
+       let fbaCheck  = SimulatorAgent.runFBA(simulated)
+       simulated
+     })
+  ~> filter(r => r.proofResult == "VERIFIED")
+  ~> sort_by(r => r.anergicFraction)
+  ~> collect(x => x, List, [])
+
+let bestEdit = results[0]
+assert(Beta7XSafety.NoInsulinLoss.holds(bestEdit))
+assert(Beta7XSafety.TCellAnergy.holds(bestEdit))
+assert(Beta7XSafety.NoOffTargetEdits.holds(bestEdit))
+
+signal ExecutorAgent.approvedEdit bestEdit
