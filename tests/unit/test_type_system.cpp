@@ -3,7 +3,7 @@
 // Milestone 1.2: Type System Foundation
 // ═══════════════════════════════════════════════════════════════════════════
 
-#include "olang/ast/Type.hpp"
+#include "olang/frontend/ASTType.hpp"
 #include "olang/type/Unit.hpp"
 #include "olang/semantic/TypeChecker.hpp"
 #include <cassert>

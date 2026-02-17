@@ -11,7 +11,7 @@
 #include <optional>
 #include <variant>
 
-namespace olang::ast {
+namespace olang::frontend {
 
 // ───────────────────────────────────────────────────────────────────────────
 // Forward Declarations
@@ -371,4 +371,4 @@ public:
     virtual void visit(const OptionalType& type) = 0;
 };
 
-} // namespace olang::ast
+} // namespace olang::frontend

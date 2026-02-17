@@ -3,11 +3,11 @@
 // Milestone 1.2: Type System Foundation
 // ═══════════════════════════════════════════════════════════════════════════
 
-#include "olang/ast/Type.hpp"
+#include "olang/frontend/ASTType.hpp"
 #include <sstream>
 #include <algorithm>
 
-namespace olang::ast {
+namespace olang::frontend {
 
 // ───────────────────────────────────────────────────────────────────────────
 // PrimitiveType Implementation
@@ -400,4 +400,4 @@ std::unique_ptr<Type> OptionalType::clone() const {
     return std::make_unique<OptionalType>(baseType_->clone());
 }
 
-} // namespace olang::ast
+} // namespace olang::frontend
