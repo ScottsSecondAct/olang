@@ -5,8 +5,7 @@
 
 #pragma once
 
-#include "olang/frontend/ASTType.hpp"
-#include "olang/semantic/DimensionalChecker.hpp"
+#include "olang/frontend/ASTType.hpp"  // ← FIXED: Use correct path
 #include "olang/semantic/SymbolTable.hpp"
 #include "olang/semantic/TypeEnvironment.hpp"
 #include "olang/semantic/ErrorReporter.hpp"
@@ -21,7 +20,7 @@ namespace olang::semantic {
 // ───────────────────────────────────────────────────────────────────────────
 // Type Checker Core
 // ───────────────────────────────────────────────────────────────────────────
-class TypeChecker : public frontend::TypeVisitor {
+class TypeChecker : public frontend::TypeVisitor {  // ← FIXED: Use frontend namespace
 public:
     TypeChecker(TypeEnvironment& env, ErrorReporter& reporter)
         : typeEnv_(env), errorReporter_(reporter), symbolTable_(nullptr) {}
@@ -93,6 +92,32 @@ private:
     };
     
     std::vector<TypeConstraint> constraints_;
+};
+
+// ───────────────────────────────────────────────────────────────────────────
+// Dimensional Analysis Checker (Biological Safety)
+// ───────────────────────────────────────────────────────────────────────────
+class DimensionalChecker {
+public:
+    explicit DimensionalChecker(ErrorReporter& reporter) 
+        : errorReporter_(reporter) {}
+    
+    // Check if operation is dimensionally valid
+    bool checkBinaryOp(const frontend::Type& lhs, const frontend::Type& rhs, 
+                      const std::string& op);
+    
+    // Check if units match for comparison/addition/subtraction
+    bool checkSameDimensions(const frontend::Type& t1, const frontend::Type& t2);
+    
+    // Compute result type for multiplication/division
+    std::unique_ptr<frontend::Type> computeResultType(
+        const frontend::Type& lhs, const frontend::Type& rhs, const std::string& op);
+    
+private:
+    ErrorReporter& errorReporter_;
+    
+    void reportDimensionalError(const std::string& message, 
+                               size_t line = 0, size_t col = 0);
 };
 
 } // namespace olang::semantic

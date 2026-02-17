@@ -13,7 +13,7 @@ namespace olang::semantic {
 // SymbolTable Implementation
 // ───────────────────────────────────────────────────────────────────────────
 bool SymbolTable::declare(const std::string& name, 
-                          std::unique_ptr<ast::Type> type,
+                          std::unique_ptr<frontend::Type> type,
                           bool isConst, bool isFunction) {
     if (existsInCurrentScope(name)) {
         return false; // Symbol already exists
@@ -71,7 +71,7 @@ TypeEnvironment::TypeEnvironment() {
 }
 
 void TypeEnvironment::initializeBuiltinTypes() {
-    using namespace ast;
+    using namespace frontend;
     
     types_["int"] = std::make_unique<PrimitiveType>(PrimitiveKind::Int);
     types_["long"] = std::make_unique<PrimitiveType>(PrimitiveKind::Long);
@@ -86,7 +86,7 @@ void TypeEnvironment::initializeBuiltinTypes() {
 }
 
 bool TypeEnvironment::registerType(const std::string& name, 
-                                   std::unique_ptr<ast::Type> type) {
+                                   std::unique_ptr<frontend::Type> type) {
     if (typeExists(name)) {
         return false;
     }
@@ -94,7 +94,7 @@ bool TypeEnvironment::registerType(const std::string& name,
     return true;
 }
 
-const ast::Type* TypeEnvironment::lookupType(const std::string& name) const {
+const frontend::Type* TypeEnvironment::lookupType(const std::string& name) const {
     auto it = types_.find(name);
     return (it != types_.end()) ? it->second.get() : nullptr;
 }
@@ -103,40 +103,40 @@ bool TypeEnvironment::typeExists(const std::string& name) const {
     return types_.find(name) != types_.end();
 }
 
-std::unique_ptr<ast::Type> TypeEnvironment::getIntType() const {
-    return std::make_unique<ast::PrimitiveType>(ast::PrimitiveKind::Int);
+std::unique_ptr<frontend::Type> TypeEnvironment::getIntType() const {
+    return std::make_unique<frontend::PrimitiveType>(frontend::PrimitiveKind::Int);
 }
 
-std::unique_ptr<ast::Type> TypeEnvironment::getLongType() const {
-    return std::make_unique<ast::PrimitiveType>(ast::PrimitiveKind::Long);
+std::unique_ptr<frontend::Type> TypeEnvironment::getLongType() const {
+    return std::make_unique<frontend::PrimitiveType>(frontend::PrimitiveKind::Long);
 }
 
-std::unique_ptr<ast::Type> TypeEnvironment::getFloatType() const {
-    return std::make_unique<ast::PrimitiveType>(ast::PrimitiveKind::Float);
+std::unique_ptr<frontend::Type> TypeEnvironment::getFloatType() const {
+    return std::make_unique<frontend::PrimitiveType>(frontend::PrimitiveKind::Float);
 }
 
-std::unique_ptr<ast::Type> TypeEnvironment::getDoubleType() const {
-    return std::make_unique<ast::PrimitiveType>(ast::PrimitiveKind::Double);
+std::unique_ptr<frontend::Type> TypeEnvironment::getDoubleType() const {
+    return std::make_unique<frontend::PrimitiveType>(frontend::PrimitiveKind::Double);
 }
 
-std::unique_ptr<ast::Type> TypeEnvironment::getBoolType() const {
-    return std::make_unique<ast::PrimitiveType>(ast::PrimitiveKind::Bool);
+std::unique_ptr<frontend::Type> TypeEnvironment::getBoolType() const {
+    return std::make_unique<frontend::PrimitiveType>(frontend::PrimitiveKind::Bool);
 }
 
-std::unique_ptr<ast::Type> TypeEnvironment::getStringType() const {
-    return std::make_unique<ast::PrimitiveType>(ast::PrimitiveKind::String);
+std::unique_ptr<frontend::Type> TypeEnvironment::getStringType() const {
+    return std::make_unique<frontend::PrimitiveType>(frontend::PrimitiveKind::String);
 }
 
-std::unique_ptr<ast::Type> TypeEnvironment::getAnyType() const {
-    return std::make_unique<ast::PrimitiveType>(ast::PrimitiveKind::Any);
+std::unique_ptr<frontend::Type> TypeEnvironment::getAnyType() const {
+    return std::make_unique<frontend::PrimitiveType>(frontend::PrimitiveKind::Any);
 }
 
-std::unique_ptr<ast::Type> TypeEnvironment::getNeverType() const {
-    return std::make_unique<ast::PrimitiveType>(ast::PrimitiveKind::Never);
+std::unique_ptr<frontend::Type> TypeEnvironment::getNeverType() const {
+    return std::make_unique<frontend::PrimitiveType>(frontend::PrimitiveKind::Never);
 }
 
-std::unique_ptr<ast::Type> TypeEnvironment::getNullType() const {
-    return std::make_unique<ast::PrimitiveType>(ast::PrimitiveKind::Null);
+std::unique_ptr<frontend::Type> TypeEnvironment::getNullType() const {
+    return std::make_unique<frontend::PrimitiveType>(frontend::PrimitiveKind::Null);
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -181,34 +181,34 @@ void ErrorReporter::clear() {
 // TypeChecker Implementation
 // ───────────────────────────────────────────────────────────────────────────
 
-bool TypeChecker::isAssignable(const ast::Type& target, 
-                               const ast::Type& source) {
+bool TypeChecker::isAssignable(const frontend::Type& target, 
+                               const frontend::Type& source) {
     // Any type is assignable to itself
     if (target.equals(source)) {
         return true;
     }
     
     // 'any_type' accepts everything
-    if (auto* primTarget = dynamic_cast<const ast::PrimitiveType*>(&target)) {
-        if (primTarget->getKind() == ast::PrimitiveKind::Any) {
+    if (auto* primTarget = dynamic_cast<const frontend::PrimitiveType*>(&target)) {
+        if (primTarget->getKind() == frontend::PrimitiveKind::Any) {
             return true;
         }
     }
     
     // 'never_type' can be assigned to anything (bottom type)
-    if (auto* primSource = dynamic_cast<const ast::PrimitiveType*>(&source)) {
-        if (primSource->getKind() == ast::PrimitiveKind::Never) {
+    if (auto* primSource = dynamic_cast<const frontend::PrimitiveType*>(&source)) {
+        if (primSource->getKind() == frontend::PrimitiveKind::Never) {
             return true;
         }
     }
     
     // Optional type handling: T? can accept T
-    if (auto* optTarget = dynamic_cast<const ast::OptionalType*>(&target)) {
+    if (auto* optTarget = dynamic_cast<const frontend::OptionalType*>(&target)) {
         return isAssignable(optTarget->getBaseType(), source);
     }
     
     // Union type handling: T1 | T2 | ... can accept any Ti
-    if (auto* unionTarget = dynamic_cast<const ast::UnionType*>(&target)) {
+    if (auto* unionTarget = dynamic_cast<const frontend::UnionType*>(&target)) {
         for (const auto& type : unionTarget->getTypes()) {
             if (isAssignable(*type, source)) {
                 return true;
@@ -217,9 +217,9 @@ bool TypeChecker::isAssignable(const ast::Type& target,
     }
     
     // Numeric widening conversions
-    if (auto* primTarget = dynamic_cast<const ast::PrimitiveType*>(&target)) {
-        if (auto* primSource = dynamic_cast<const ast::PrimitiveType*>(&source)) {
-            using PK = ast::PrimitiveKind;
+    if (auto* primTarget = dynamic_cast<const frontend::PrimitiveType*>(&target)) {
+        if (auto* primSource = dynamic_cast<const frontend::PrimitiveType*>(&source)) {
+            using PK = frontend::PrimitiveKind;
             auto tk = primTarget->getKind();
             auto sk = primSource->getKind();
             
@@ -241,14 +241,14 @@ bool TypeChecker::isAssignable(const ast::Type& target,
     return false;
 }
 
-bool TypeChecker::isSubtype(const ast::Type& sub, const ast::Type& super) {
+bool TypeChecker::isSubtype(const frontend::Type& sub, const frontend::Type& super) {
     // For now, subtyping is same as assignability
     // In full impl, would handle structural subtyping for records/tuples
     return isAssignable(super, sub);
 }
 
-std::optional<std::unique_ptr<ast::Type>> TypeChecker::unify(
-    const ast::Type& t1, const ast::Type& t2) {
+std::optional<std::unique_ptr<frontend::Type>> TypeChecker::unify(
+    const frontend::Type& t1, const frontend::Type& t2) {
     
     // If types are equal, unification succeeds
     if (t1.equals(t2)) {
@@ -256,22 +256,22 @@ std::optional<std::unique_ptr<ast::Type>> TypeChecker::unify(
     }
     
     // 'any_type' unifies with everything to 'any_type'
-    if (auto* prim1 = dynamic_cast<const ast::PrimitiveType*>(&t1)) {
-        if (prim1->getKind() == ast::PrimitiveKind::Any) {
+    if (auto* prim1 = dynamic_cast<const frontend::PrimitiveType*>(&t1)) {
+        if (prim1->getKind() == frontend::PrimitiveKind::Any) {
             return typeEnv_.getAnyType();
         }
     }
-    if (auto* prim2 = dynamic_cast<const ast::PrimitiveType*>(&t2)) {
-        if (prim2->getKind() == ast::PrimitiveKind::Any) {
+    if (auto* prim2 = dynamic_cast<const frontend::PrimitiveType*>(&t2)) {
+        if (prim2->getKind() == frontend::PrimitiveKind::Any) {
             return typeEnv_.getAnyType();
         }
     }
     
     // Union types: create union of both
     if (t1.isUnion() || t2.isUnion()) {
-        std::vector<std::unique_ptr<ast::Type>> types;
+        std::vector<std::unique_ptr<frontend::Type>> types;
         
-        if (auto* u1 = dynamic_cast<const ast::UnionType*>(&t1)) {
+        if (auto* u1 = dynamic_cast<const frontend::UnionType*>(&t1)) {
             for (const auto& type : u1->getTypes()) {
                 types.push_back(type->clone());
             }
@@ -279,7 +279,7 @@ std::optional<std::unique_ptr<ast::Type>> TypeChecker::unify(
             types.push_back(t1.clone());
         }
         
-        if (auto* u2 = dynamic_cast<const ast::UnionType*>(&t2)) {
+        if (auto* u2 = dynamic_cast<const frontend::UnionType*>(&t2)) {
             for (const auto& type : u2->getTypes()) {
                 types.push_back(type->clone());
             }
@@ -287,13 +287,13 @@ std::optional<std::unique_ptr<ast::Type>> TypeChecker::unify(
             types.push_back(t2.clone());
         }
         
-        return std::make_unique<ast::UnionType>(std::move(types));
+        return std::make_unique<frontend::UnionType>(std::move(types));
     }
     
     // Numeric widening during unification
-    if (auto* prim1 = dynamic_cast<const ast::PrimitiveType*>(&t1)) {
-        if (auto* prim2 = dynamic_cast<const ast::PrimitiveType*>(&t2)) {
-            using PK = ast::PrimitiveKind;
+    if (auto* prim1 = dynamic_cast<const frontend::PrimitiveType*>(&t1)) {
+        if (auto* prim2 = dynamic_cast<const frontend::PrimitiveType*>(&t2)) {
+            using PK = frontend::PrimitiveKind;
             auto k1 = prim1->getKind();
             auto k2 = prim2->getKind();
             
@@ -317,8 +317,8 @@ std::optional<std::unique_ptr<ast::Type>> TypeChecker::unify(
     return std::nullopt;
 }
 
-void TypeChecker::reportTypeMismatch(const ast::Type& expected, 
-                                    const ast::Type& actual,
+void TypeChecker::reportTypeMismatch(const frontend::Type& expected, 
+                                    const frontend::Type& actual,
                                     size_t line, size_t col) {
     std::ostringstream oss;
     oss << "Type mismatch: expected '" << expected.toString() 
@@ -338,11 +338,11 @@ void TypeChecker::exitScope() {
 // ───────────────────────────────────────────────────────────────────────────
 // Visitor Implementations (Placeholder for Full Semantic Analysis)
 // ───────────────────────────────────────────────────────────────────────────
-void TypeChecker::visit(const ast::PrimitiveType& type) {
+void TypeChecker::visit(const frontend::PrimitiveType& type) {
     // Validation logic for primitive types
 }
 
-void TypeChecker::visit(const ast::UserDefinedType& type) {
+void TypeChecker::visit(const frontend::UserDefinedType& type) {
     // Check if type is registered in environment
     if (!typeEnv_.typeExists(type.getName())) {
         std::ostringstream oss;
@@ -352,68 +352,68 @@ void TypeChecker::visit(const ast::UserDefinedType& type) {
     }
 }
 
-void TypeChecker::visit(const ast::PipelineType& type) {
+void TypeChecker::visit(const frontend::PipelineType& type) {
     // Recursively check input and output types
     type.getInputType().accept(*this);
     type.getOutputType().accept(*this);
 }
 
-void TypeChecker::visit(const ast::ListType& type) {
+void TypeChecker::visit(const frontend::ListType& type) {
     type.getElementType().accept(*this);
 }
 
-void TypeChecker::visit(const ast::MapType& type) {
+void TypeChecker::visit(const frontend::MapType& type) {
     type.getKeyType().accept(*this);
     type.getValueType().accept(*this);
 }
 
-void TypeChecker::visit(const ast::SetType& type) {
+void TypeChecker::visit(const frontend::SetType& type) {
     type.getElementType().accept(*this);
 }
 
-void TypeChecker::visit(const ast::StreamType& type) {
+void TypeChecker::visit(const frontend::StreamType& type) {
     type.getElementType().accept(*this);
 }
 
-void TypeChecker::visit(const ast::FutureType& type) {
+void TypeChecker::visit(const frontend::FutureType& type) {
     type.getValueType().accept(*this);
 }
 
-void TypeChecker::visit(const ast::ResultType& type) {
+void TypeChecker::visit(const frontend::ResultType& type) {
     type.getOkType().accept(*this);
     type.getErrorType().accept(*this);
 }
 
-void TypeChecker::visit(const ast::OptionType& type) {
+void TypeChecker::visit(const frontend::OptionType& type) {
     type.getValueType().accept(*this);
 }
 
-void TypeChecker::visit(const ast::ProvenanceType& type) {
+void TypeChecker::visit(const frontend::ProvenanceType& type) {
     type.getDataType().accept(*this);
 }
 
-void TypeChecker::visit(const ast::FunctionType& type) {
+void TypeChecker::visit(const frontend::FunctionType& type) {
     for (const auto& param : type.getParameterTypes()) {
         param->accept(*this);
     }
     type.getReturnType().accept(*this);
 }
 
-void TypeChecker::visit(const ast::UnionType& type) {
+void TypeChecker::visit(const frontend::UnionType& type) {
     for (const auto& t : type.getTypes()) {
         t->accept(*this);
     }
 }
 
-void TypeChecker::visit(const ast::OptionalType& type) {
+void TypeChecker::visit(const frontend::OptionalType& type) {
     type.getBaseType().accept(*this);
 }
 
 // ───────────────────────────────────────────────────────────────────────────
 // DimensionalChecker Implementation
 // ───────────────────────────────────────────────────────────────────────────
-bool DimensionalChecker::checkBinaryOp(const ast::Type& lhs, 
-                                       const ast::Type& rhs,
+bool DimensionalChecker::checkBinaryOp(const frontend::Type& lhs, 
+                                       const frontend::Type& rhs,
                                        const std::string& op) {
     // For Milestone 1.2, this is a placeholder
     // Full implementation would extract dimensional metadata from types
@@ -430,15 +430,15 @@ bool DimensionalChecker::checkBinaryOp(const ast::Type& lhs,
     return true;
 }
 
-bool DimensionalChecker::checkSameDimensions(const ast::Type& t1, 
-                                            const ast::Type& t2) {
+bool DimensionalChecker::checkSameDimensions(const frontend::Type& t1, 
+                                            const frontend::Type& t2) {
     // Simplified: just check type equality
     // Full impl would extract and compare dimensional exponents
     return t1.equals(t2);
 }
 
-std::unique_ptr<ast::Type> DimensionalChecker::computeResultType(
-    const ast::Type& lhs, const ast::Type& rhs, const std::string& op) {
+std::unique_ptr<frontend::Type> DimensionalChecker::computeResultType(
+    const frontend::Type& lhs, const frontend::Type& rhs, const std::string& op) {
     
     // For now, return lhs type
     // Full implementation would compute dimensional algebra

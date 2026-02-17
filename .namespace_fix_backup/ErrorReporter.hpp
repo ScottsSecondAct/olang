@@ -1,6 +1,6 @@
 #pragma once
 
-#include "olang/frontend/ASTType.hpp"
+#include "olang/ast/Type.hpp"
 #include <unordered_map>
 #include <string>
 #include <memory>

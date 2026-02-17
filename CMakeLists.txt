@@ -97,6 +97,31 @@ target_include_directories(olang_core INTERFACE ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(olang_core INTERFACE olang_flags llvm_support)
 
 # =============================================================================
+# MILESTONE 1.2: TYPE SYSTEM LIBRARY
+# AST Type nodes, Type Checker, Symbol Tables, Type Environment
+# =============================================================================
+add_library(olang_type_system STATIC
+  src/frontend/ASTType.cpp              # ← CORRECTED PATH
+  src/semantic/TypeChecker.cpp
+  src/semantic/SymbolTable.cpp
+  src/semantic/TypeEnvironment.cpp
+  src/semantic/ErrorReporter.cpp
+)
+
+target_include_directories(olang_type_system PUBLIC
+  ${CMAKE_SOURCE_DIR}/include
+)
+
+target_link_libraries(olang_type_system PUBLIC
+  olang_core
+  olang_flags
+)
+
+target_compile_features(olang_type_system PUBLIC cxx_std_23)
+
+message(STATUS "Target: olang_type_system (Milestone 1.2)")
+
+# =============================================================================
 # ANTLR4 GRAMMAR CODE GENERATION
 #
 # We look for the tool JAR in this order:
@@ -110,7 +135,7 @@ target_link_libraries(olang_core INTERFACE olang_flags llvm_support)
 # =============================================================================
 set(ANTLR_GEN_DIR ${CMAKE_SOURCE_DIR}/src/frontend/generated)
 
-# ── Locate the ANTLR4 tool ───────────────────────────────────────────────────
+# ── Locate the ANTLR4 tool ──────────────────────────────────────────────────
 if(NOT ANTLR4_JAR)
   # Checked-in copy (recommended path for the repo)
   if(EXISTS "${CMAKE_SOURCE_DIR}/tools/antlr4-complete.jar")
@@ -194,7 +219,7 @@ if(ANTLR4_CMD)
   add_custom_target(olang_generate_grammar DEPENDS ${_LEXER_CPP})
 endif()
 
-# ── Build the grammar library from generated sources ─────────────────────────
+# ── Build the grammar library from generated sources ────────────────────────
 file(GLOB ANTLR_SRCS ${ANTLR_GEN_DIR}/*.cpp)
 
 if(ANTLR_SRCS AND HAVE_ANTLR4)
@@ -220,23 +245,6 @@ else()
     message(STATUS "  -> Or copy tools/antlr4-complete.jar from Scott's setup notes")
   endif()
 endif()
-
-# =============================================================================
-# olangc COMPILER DRIVER
-# =============================================================================
-# find_package(LLVM 18 QUIET CONFIG)
-# if(LLVM_FOUND)
-#   set(OLANG_HAVE_LLVM TRUE)
-#   target_compile_definitions(olang_core INTERFACE OLANG_HAVE_LLVM)
-  
-#   # Link LLVM libraries to olang_core so all targets get them
-#   llvm_map_components_to_libnames(llvm_libs support core)
-#   target_link_libraries(olang_core INTERFACE ${llvm_libs})
-  
-#   message(STATUS "LLVM ${LLVM_PACKAGE_VERSION} found")
-# else()
-#   message(STATUS "LLVM 18 NOT found -- stub allocator active. sudo apt install llvm-18-dev")
-# endif()
 
 # =============================================================================
 # CUDA / NVPTX BACKEND  (Phase 2 — OFF by default, no nvcc search unless ON)
@@ -266,6 +274,7 @@ FetchContent_MakeAvailable(Catch2)
 list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(Catch)
 
+# ── Phase 1 Tests (existing) ─────────────────────────────────────────────────
 add_executable(test_units
   tests/unit/middle/test_unit_dimensional_analysis.cpp)
 target_link_libraries(test_units PRIVATE olang_core Catch2::Catch2WithMain)
@@ -275,6 +284,38 @@ add_executable(test_rbac
   tests/unit/runtime/test_capability_rbac.cpp)
 target_link_libraries(test_rbac PRIVATE olang_core Catch2::Catch2WithMain)
 catch_discover_tests(test_rbac)
+
+# ── Milestone 1.2 Tests (Type System) ────────────────────────────────────────
+# NOTE: test_type_system.cpp needs to be converted to Catch2 format
+# Uncomment when ready:
+# add_executable(test_type_system
+#   tests/unit/test_type_system.cpp)
+# target_link_libraries(test_type_system PRIVATE
+#   olang_type_system
+#   olang_core
+#   Catch2::Catch2WithMain)
+# catch_discover_tests(test_type_system)
+# message(STATUS "Test: test_type_system (Milestone 1.2 - 24 tests)")
+
+# =============================================================================
+# olangc COMPILER DRIVER
+# =============================================================================
+if(HAVE_GRAMMAR)
+  add_executable(olangc
+    tools/olangc/main.cpp
+    src/frontend/Diagnostic.cpp
+    src/frontend/ASTBuilder.cpp)
+  
+  target_link_libraries(olangc PRIVATE 
+    olang_grammar 
+    olang_type_system  # Link the type system
+    olang_core)
+  
+  target_compile_options(olangc PRIVATE 
+    -Wall -Wextra -Wpedantic -Wno-unused-parameter -O0 -g3)
+  
+  message(STATUS "Target: olangc")
+endif()
 
 # =============================================================================
 # CONFIGURATION SUMMARY
@@ -289,21 +330,8 @@ message(STATUS "  ANTLR4 ver    : ${ANTLR4_RUNTIME_VERSION}")
 endif()
 message(STATUS "  LLVM 18 found : ${HAVE_LLVM}")
 message(STATUS "  Grammar srcs  : ${HAVE_GRAMMAR}")
+message(STATUS "  Type system   : olang_type_system (M1.2)")
 message(STATUS "  CUDA backend  : ${OLANG_ENABLE_CUDA}")
 message(STATUS "  Build type    : ${CMAKE_BUILD_TYPE}")
 message(STATUS "====================================")
-# =============================================================================
-# olangc COMPILER DRIVER
-# =============================================================================
-if(HAVE_GRAMMAR)
-  add_executable(olangc
-    tools/olangc/main.cpp
-    src/frontend/Diagnostic.cpp
-    src/frontend/ASTBuilder.cpp)
-  
-  target_link_libraries(olangc PRIVATE olang_grammar olang_core)
-  target_compile_options(olangc PRIVATE 
-    -Wall -Wextra -Wpedantic -Wno-unused-parameter -O0 -g3)
-  
-  message(STATUS "Target: olangc")
-endif()
+message(STATUS "")

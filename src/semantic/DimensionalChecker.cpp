@@ -1,6 +1,7 @@
 #pragma once
 
-#include "olang/ast/Type.hpp"
+#include "olang/frontend/ASTType.hpp"
+#include "olang/semantic/DimensionalChecker.hpp"
 #include <unordered_map>
 #include <string>
 #include <memory>
@@ -18,15 +19,15 @@ public:
         : errorReporter_(reporter) {}
     
     // Check if operation is dimensionally valid
-    bool checkBinaryOp(const ast::Type& lhs, const ast::Type& rhs, 
+    bool checkBinaryOp(const frontend::Type& lhs, const frontend::Type& rhs, 
                       const std::string& op);
     
     // Check if units match for comparison/addition/subtraction
-    bool checkSameDimensions(const ast::Type& t1, const ast::Type& t2);
+    bool checkSameDimensions(const frontend::Type& t1, const frontend::Type& t2);
     
     // Compute result type for multiplication/division
-    std::unique_ptr<ast::Type> computeResultType(
-        const ast::Type& lhs, const ast::Type& rhs, const std::string& op);
+    std::unique_ptr<frontend::Type> computeResultType(
+        const frontend::Type& lhs, const frontend::Type& rhs, const std::string& op);
     
 private:
     ErrorReporter& errorReporter_;

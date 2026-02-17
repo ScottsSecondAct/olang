@@ -1,10 +1,3 @@
-#pragma once
-
-#include "olang/frontend/ASTType.hpp"
-#include <memory>
-#include <string>
-#include <unordered_map>
-
 namespace olang::semantic {
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -12,11 +5,11 @@ namespace olang::semantic {
 // ───────────────────────────────────────────────────────────────────────────
 struct Symbol {
     std::string name;
-    std::unique_ptr<frontend::Type> type;
+    std::unique_ptr<ast::Type> type;
     bool isConst;
     bool isFunction;
     
-    Symbol(std::string n, std::unique_ptr<frontend::Type> t,  // ← FIXED
+    Symbol(std::string n, std::unique_ptr<ast::Type> t, 
            bool isConst = false, bool isFunc = false)
         : name(std::move(n)), type(std::move(t)), 
           isConst(isConst), isFunction(isFunc) {}
@@ -31,7 +24,7 @@ public:
     explicit SymbolTable(SymbolTable* parent) : parent_(parent) {}
     
     // Symbol registration
-    bool declare(const std::string& name, std::unique_ptr<frontend::Type> type,  // ← FIXED
+    bool declare(const std::string& name, std::unique_ptr<ast::Type> type,
                  bool isConst = false, bool isFunction = false);
     
     // Symbol lookup (searches up scope chain)
@@ -50,5 +43,4 @@ private:
     std::unordered_map<std::string, std::unique_ptr<Symbol>> symbols_;
     SymbolTable* parent_ = nullptr;
 };
-
 } // namespace olang::semantic
