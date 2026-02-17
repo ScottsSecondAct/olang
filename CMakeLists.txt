@@ -71,9 +71,7 @@ endif()
 # LLVM 18  (optional — needed for IRGen in Phase 2)
 # sudo apt install llvm-18-dev
 # =============================================================================
-find_package(LLVM 18 CONFIG
-             HINTS /usr/lib/llvm-18/lib/cmake/llvm
-             QUIET)
+find_package(LLVM 18 QUIET CONFIG PATHS /usr/lib/llvm-18/lib/cmake/llvm)
 
 if(LLVM_FOUND)
   message(STATUS "LLVM ${LLVM_VERSION}: ${LLVM_DIR}")
@@ -226,15 +224,19 @@ endif()
 # =============================================================================
 # olangc COMPILER DRIVER
 # =============================================================================
-if(HAVE_GRAMMAR)
-  add_executable(olangc
-    tools/olangc/main.cpp
-    src/frontend/Diagnostic.cpp)
-  target_link_libraries(olangc PRIVATE olang_grammar olang_core)
-  message(STATUS "Target: olangc")
-else()
-  message(STATUS "Target 'olangc' SKIPPED -- see grammar source notes above")
-endif()
+# find_package(LLVM 18 QUIET CONFIG)
+# if(LLVM_FOUND)
+#   set(OLANG_HAVE_LLVM TRUE)
+#   target_compile_definitions(olang_core INTERFACE OLANG_HAVE_LLVM)
+  
+#   # Link LLVM libraries to olang_core so all targets get them
+#   llvm_map_components_to_libnames(llvm_libs support core)
+#   target_link_libraries(olang_core INTERFACE ${llvm_libs})
+  
+#   message(STATUS "LLVM ${LLVM_PACKAGE_VERSION} found")
+# else()
+#   message(STATUS "LLVM 18 NOT found -- stub allocator active. sudo apt install llvm-18-dev")
+# endif()
 
 # =============================================================================
 # CUDA / NVPTX BACKEND  (Phase 2 — OFF by default, no nvcc search unless ON)
@@ -290,3 +292,18 @@ message(STATUS "  Grammar srcs  : ${HAVE_GRAMMAR}")
 message(STATUS "  CUDA backend  : ${OLANG_ENABLE_CUDA}")
 message(STATUS "  Build type    : ${CMAKE_BUILD_TYPE}")
 message(STATUS "====================================")
+# =============================================================================
+# olangc COMPILER DRIVER
+# =============================================================================
+if(HAVE_GRAMMAR)
+  add_executable(olangc
+    tools/olangc/main.cpp
+    src/frontend/Diagnostic.cpp
+    src/frontend/ASTBuilder.cpp)
+  
+  target_link_libraries(olangc PRIVATE olang_grammar olang_core)
+  target_compile_options(olangc PRIVATE 
+    -Wall -Wextra -Wpedantic -Wno-unused-parameter -O0 -g3)
+  
+  message(STATUS "Target: olangc")
+endif()

@@ -11,6 +11,7 @@
 #include "OLangParser.h"
 #include "olang/frontend/ASTContext.h"
 #include "olang/frontend/Diagnostic.h"
+#include "olang/frontend/ASTBuilder.h"
 
 namespace fs = std::filesystem;
 

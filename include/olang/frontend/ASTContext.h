@@ -2,8 +2,7 @@
 #include <span>
 #include <string_view>
 #include <utility>
-#include "llvm/ADT/StringRef.h"
-#include "llvm/Support/Allocator.h"
+#include "olang/support/llvm_fwd.h"
 #include "olang/frontend/AST.h"
 
 namespace olang::ast {

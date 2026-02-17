@@ -39,6 +39,14 @@ proofDeclaration : PROOF ID LCURLY invariantDeclaration* RCURLY ;
 invariantDeclaration : INVARIANT ID LCURLY expressionStatement* RCURLY ;
 
 importDeclaration : IMPORT dottedAsNamesList SEMI | FROM relativeModule IMPORT importTargets SEMI ;
+
+// Import helper rules
+dottedAsNamesList : dottedAsNames (COMMA dottedAsNames)* ;
+dottedAsNames : qualifiedName (AS ID)? ;
+relativeModule : qualifiedName ;
+importTargets : importAsNames (COMMA importAsNames)* | MUL ;
+importAsNames : ID (AS ID)? ;
+
 bindingDeclaration : LET ID (COLON type)? EQUALS expression ;
 functionDeclaration : DEF ID LPAREN typedParameterList? RPAREN ARROW type EQUALS expression ;
 pipelineDeclaration : ID COLON PIPELINE_TYPE LT type ARROW type GT EQUALS pipelineBody ;
@@ -203,7 +211,7 @@ listLiteral : LBRACK annotationValueList? RBRACK ;
 annotationValueList : annotationValue (COMMA annotationValue)* ;
 
 qualifiedName : ID (DOT ID)* ;
-literalValue : BOOLEAN | INT_LITERAL | DECIMAL_LITERAL | STRING | RAW_STRING | MULTILINE_STRING | NULL ;
+literalValue : BOOLEAN | INT_LITERAL | DECIMAL_LITERAL | STRING | RAW_STRING | MULTILINE_STRING | NULL_LIT ;
 expressionList : expression (COMMA expression)* ;
 idList : ID (COMMA ID)* ;
 argument : ID EQUALS expression | lambdaArgumentRule | expression ;

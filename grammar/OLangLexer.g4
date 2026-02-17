@@ -25,7 +25,7 @@ SCAN:'scan'; COLLECT:'collect';
 
 INT_TYPE:'int'; LONG_TYPE:'long'; FLOAT_TYPE:'float'; DOUBLE_TYPE:'double';
 BOOL_TYPE:'bool'; CHAR_TYPE:'char'; STRING_TYPE:'string'; ANY_TYPE:'any_type';
-NEVER_TYPE:'never_type'; NULL:'null'; OPTIONAL:'?';
+NEVER_TYPE:  'never_type'; NULL_LIT:    'null';
 LIST_TYPE:'List'; MAP_TYPE:'Map'; SET_TYPE:'Set'; PIPELINE_TYPE:'Pipeline';
 STREAM_TYPE:'Stream'; FUTURE_TYPE:'Future'; RESULT_TYPE:'Result';
 OPTION_TYPE:'Option'; PROVENANCE_TYPE:'Provenance';

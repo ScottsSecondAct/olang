@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
-#include "llvm/ADT/ArrayRef.h"
-#include "llvm/ADT/StringRef.h"
+#include "olang/support/llvm_fwd.h"
+// already included via llvm_fwd.h
 #include "olang/frontend/SourceLocation.h"
 
 namespace olang::ast {
