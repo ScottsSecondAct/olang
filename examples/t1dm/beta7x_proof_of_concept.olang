@@ -1,74 +1,194 @@
-// BETA-7-X: CRISPR-mediated immune evasion for T1DM
-// Goal: minimal PD-L1 up / MHC-I down edit that achieves T-Cell anergy
-// while preserving Beta-Cell insulin secretion (FBA steady-state).
+// ═══════════════════════════════════════════════════════════════════════════
+// BETA-7-X: CRISPR-MEDIATED IMMUNE EVASION PIPELINE FOR T1DM
+// ───────────────────────────────────────────────────────────────────────────
+// Goal: Discover the *minimal* genetic edit that simultaneously:
+//   (1) Up-regulates PD-L1 (checkpoint ligand) → induces T-Cell anergy
+//   (2) Down-regulates MHC-I (antigen presentation) → reduces TCR engagement
+//   (3) Preserves Beta-Cell insulin secretion verified via FBA steady-state
+//
+// Architecture: Four-agent RBAC pipeline governed by LTL proof invariants.
+//   AnalystAgent  → scrapes scRNA-seq data (HPAP dataset)
+//   StrategistAgent → defines SMT-constrained search space
+//   SimulatorAgent  → runs 1M parallel KMC/FBA simulations via ||| operator
+//   ExecutorAgent   → receives the single verified edit for physical synthesis
+// ═══════════════════════════════════════════════════════════════════════════
 
+// Domain types: IsletState captures the pancreatic microenvironment snapshot;
+// TCellState models the immunological synapse receptor binding state machine.
 import bio.IsletState
 import bio.TCellState
 import std.collections.List
 
+// ─── AGENT DECLARATIONS ────────────────────────────────────────────────────
+// Each agent is a strongly-typed, capability-bounded execution unit.
+// Capabilities are enforced at the binary level via C++ enum class Capability.
+// No agent may invoke a capability not declared in its RBAC manifest.
+
+// AnalystAgent: VIRTUAL agent. Read-only access to genomic and transcriptomic
+// data sources. Ingests the HPAP (Human Pancreas Analysis Program) scRNA-seq
+// feed and emits raw IsletState snapshots downstream.
 agent AnalystAgent {
   capability ReadScrnaSeq, ReadGenomicIndex
+
+  // Reactive input stream: each item is a live or archival islet microenvironment
+  // snapshot deserialized from the HPAP data lake.
   stream hpapFeed : Stream<IsletState>
+
+  // FRP rule: fires whenever new data arrives on hpapFeed.
+  // Captures the next snapshot and emits it to any downstream subscriber.
+  // The `emit` keyword pushes the value into the runtime's typed event bus.
   rule "parse-hpap" {
     when hpapFeed.hasData -> { let snapshot = hpapFeed.next(); emit snapshot }
   }
 }
 
+// StrategistAgent: VIRTUAL agent. Owns the SMT solver invocation capability.
+// Receives IsletState snapshots and generates a constrained set of CrisprEdit
+// candidates that satisfy the Beta7XOptimiser solver goals (see below).
 agent StrategistAgent {
   capability InvokeSMTSolver, ReadGenomicIndex
   stream isletIn : Stream<IsletState>
 }
 
+// SimulatorAgent: VIRTUAL agent. The computational workhorse — the "Digital Twin."
+// Holds the capability to launch both stochastic (KMC) and deterministic (FBA)
+// simulations, and critically, RunParallelKernel which authorizes use of the
+// ||| operator to offload 1M simulation instances to CUDA/NVPTX.
+// WriteSimulationResult allows it to persist verified results.
 agent SimulatorAgent {
   capability RunKMCSimulation, RunFBASimulation, RunParallelKernel,
              WriteSimulationResult
   stream isletIn : Stream<IsletState>
 }
 
+// ExecutorAgent: PHYSICAL agent. The *only* agent in this pipeline permitted
+// to cross the virtual/physical boundary and actuate lab hardware.
+// SynthesizeCRISPR drives the guide RNA synthesizer; ControlLabRobotics
+// manages liquid handling; ReadLabSensor provides closed-loop feedback.
+// This agent receives *only* edits that have passed all LTL proof assertions.
 agent ExecutorAgent {
   capability SynthesizeCRISPR, ControlLabRobotics, ReadLabSensor
   stream approvedEdit : Stream<CrisprEdit>
 }
 
+// ─── FORMAL VERIFICATION: LTL PROOF BLOCK ──────────────────────────────────
+// Beta7XSafety defines the non-negotiable biological invariants for this
+// experiment. Each invariant is compiled into branching LTL assertions that
+// the Governance Layer monitors continuously at runtime.
+// A single invariant violation halts the pipeline and signals ExecutorAgent
+// to abort — no physical synthesis can occur on an unverified edit.
 proof Beta7XSafety {
+
+  // Invariant 1: Insulin secretion must not be permanently lost.
+  // For any edited Beta-Cell, it must *eventually* return to active secretion.
+  // This guards against cytotoxic off-target edits that silence GSIS pathways.
   invariant NoInsulinLoss {
     always(when BetaCell.isEdited == true -> eventually(BetaCell.isSecreting == true))
   }
+
+  // Invariant 2: T-Cell anergy must be achieved within a biologically plausible
+  // window (3600 seconds ≈ 1 hour of immunological synapse dwell time).
+  // An edit that achieves anergy too slowly is clinically non-viable.
   invariant TCellAnergy {
     always(when TCell.state == Engaged ->
       eventually(TCell.state == Anergic) within 3600.0)
   }
+
+  // Invariant 3: Every applied CRISPR edit must target only pre-approved genomic
+  // loci. This is the primary off-target safety guardrail — any edit whose
+  // siteId is absent from ApprovedSiteList is a critical safety violation.
   invariant NoOffTargetEdits {
     always(when CrisprEdit.applied == true -> CrisprEdit.siteId in ApprovedSiteList)
   }
 }
 
+// ─── DECLARATIVE SOLVER: SMT-CONSTRAINED SEARCH SPACE ──────────────────────
+// Beta7XOptimiser defines the optimization problem as a goal, not an algorithm.
+// The SMT backend (Z3 or equivalent) resolves the satisfying assignment.
+// The Strategist Agent invokes this solver to bound the candidate edit space
+// before handing off to the expensive KMC simulation step.
 solver Beta7XOptimiser {
+  // pdl1Delta: fold-change increase in PD-L1 surface expression.
+  // Domain [0.0, 5.0] reflects biologically safe up-regulation range.
   variable pdl1Delta : float in 0.0 ..= 5.0
+
+  // mhc1Delta: fold-change decrease in MHC-I surface expression.
+  // Domain [0.0, 1.0] where 1.0 = complete knockout (excluded by constraints).
   variable mhc1Delta : float in 0.0 ..= 1.0
+
+  // Hard constraints: PD-L1 must exceed the anergy-induction threshold (>1.5x);
+  // MHC-I reduction must remain partial (<0.6x) to avoid full immune invisibility
+  // which risks oncogenic escape — a critical biosafety boundary.
   satisfy { pdl1Delta > 1.5; mhc1Delta < 0.6; }
+
+  // Objective: minimize the *total edit magnitude* (principle of minimal intervention).
+  // Smaller edits → fewer pleiotropic effects → lower risk of unintended consequences.
   minimize pdl1Delta + (1.0 - mhc1Delta)
 }
 
+// ─── PIPELINE EXECUTION ────────────────────────────────────────────────────
+
+// Fetch the most recent islet microenvironment baseline from the HPAP feed.
+// This is the read-only global state from which all parallel simulations
+// derive their CoW (Copy-on-Write) delta snapshots.
 let baseline : IsletState = AnalystAgent.hpapFeed.latest()
+
+// Ask the StrategistAgent to generate a set of CRISPR edit candidates whose
+// parameters are bounded by the Beta7XOptimiser solver solution.
+// Each CrisprEdit is a typed value object: { siteId, pdl1Delta, mhc1Delta, ... }
 let editCandidates : List<CrisprEdit> =
   StrategistAgent.generateCandidates(baseline, Beta7XOptimiser)
 
+// Main pipeline: candidates flow through a series of type-safe transformations.
+// The ~> (PIPELINE_OP) operator chains async stages; each stage is non-blocking.
 let results =
   editCandidates
+
+  // Stage 1: Pre-filter. Discard any candidate whose static safety score
+  // (computed by the Strategist from sequence-level heuristics) is below 0.95.
+  // This prunes the expensive simulation space before GPU dispatch.
   ~> filter(c => c.safetyScore > 0.95)
+
+  // Stage 2: Simulate. For each surviving candidate, launch 1,000,000 parallel
+  // KMC trajectories via the ||| operator — this is the hardware compilation
+  // boundary. LLVM lowers the right-hand side into a PTX kernel.
+  // The CoW memory model ensures each trajectory reads from the shared `baseline`
+  // and only allocates a delta page on first write (zero VRAM duplication).
+  // FBA is run serially on the aggregated KMC result to confirm metabolic
+  // steady-state (insulin secretion pathway flux remains positive).
   ~> map(candidate => {
        let simulated = baseline ||| SimulatorAgent.runKMC(candidate, 1_000_000)
        let fbaCheck  = SimulatorAgent.runFBA(simulated)
        simulated
      })
+
+  // Stage 3: Retain only simulation results that the Governance Layer has
+  // certified as "VERIFIED" against all Beta7XSafety LTL invariants.
   ~> filter(r => r.proofResult == "VERIFIED")
+
+  // Stage 4: Rank survivors by anergic T-Cell fraction (ascending).
+  // The best edit maximizes anergy with the smallest molecular footprint.
   ~> sort_by(r => r.anergicFraction)
+
+  // Stage 5: Materialize the lazy pipeline into a concrete List.
   ~> collect(x => x, List, [])
 
+// Select the top-ranked edit: highest anergic fraction among verified candidates.
 let bestEdit = results[0]
+
+// ─── FINAL SAFETY ASSERTIONS ───────────────────────────────────────────────
+// Belt-and-suspenders: explicitly re-evaluate all three LTL invariants against
+// the selected bestEdit before authorizing physical synthesis.
+// These assert() calls are compiled into hard runtime checks — a failing
+// assertion raises a pipeline abort signal; ExecutorAgent is never reached.
 assert(Beta7XSafety.NoInsulinLoss.holds(bestEdit))
 assert(Beta7XSafety.TCellAnergy.holds(bestEdit))
 assert(Beta7XSafety.NoOffTargetEdits.holds(bestEdit))
 
+// ─── PHYSICAL HANDOFF ──────────────────────────────────────────────────────
+// Only after all assertions pass does the runtime emit a system-level signal
+// to ExecutorAgent's approvedEdit stream. This is the sole code path by which
+// a CrisprEdit crosses the virtual/physical boundary into lab hardware.
+// The `signal` keyword generates a privileged interrupt — it cannot be spoofed
+// by any VIRTUAL agent, as capability enforcement is checked at the call site.
 signal ExecutorAgent.approvedEdit bestEdit

@@ -1,0 +1,92 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers on tags like v0.1.0, v1.0.0, etc.
+
+permissions:
+  contents: write
+
+env:
+  BINARY_NAME: olangc
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Build: Linux x86_64
+  # ---------------------------------------------------------------------------
+  build:
+    name: Build (Linux x86_64)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            llvm-18-dev \
+            libantlr4-runtime-dev \
+            default-jre-headless \
+            cmake \
+            ninja-build
+
+      - name: Download ANTLR4 jar
+        run: |
+          mkdir -p $HOME/lib
+          curl -fL https://www.antlr.org/download/antlr-4.13.2-complete.jar \
+               -o $HOME/lib/antlr-4.13.2-complete.jar
+
+      - name: Configure
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Package
+        run: |
+          STAGING="${{ env.BINARY_NAME }}-${{ github.ref_name }}-x86_64-linux"
+          mkdir -p "$STAGING"
+          cp build/${{ env.BINARY_NAME }} "$STAGING/"
+          cp README.md "$STAGING/"
+          tar czf "$STAGING.tar.gz" "$STAGING"
+          echo "ASSET=$STAGING.tar.gz" >> $GITHUB_ENV
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BINARY_NAME }}-x86_64-linux
+          path: ${{ env.ASSET }}
+
+  # ---------------------------------------------------------------------------
+  # Create GitHub Release and attach binaries
+  # ---------------------------------------------------------------------------
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Generate checksums
+        run: |
+          cd artifacts
+          find . -type f -name '*.tar.gz' -exec mv {} . \;
+          sha256sum *.tar.gz > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            artifacts/*.tar.gz
+            artifacts/SHA256SUMS.txt
