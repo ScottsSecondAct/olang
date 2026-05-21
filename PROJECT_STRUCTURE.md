@@ -1,442 +1,175 @@
 # OLang Project Structure
 
-**Last Updated:** February 17, 2026  
-**Current Milestone:** 1.2 (Type System) — COMPLETE ✅
+**Last Updated:** May 2026  
+**Current Status:** Phase 1 complete — Rust compiler operational
 
 ---
 
-## Directory Layout
+## Directory layout
 
 ```
-olang/
-├── cmake/                      # CMake utility modules
-├── examples/t1dm/              # Example OLang programs for T1DM
-├── grammar/                    # ANTLR4 grammar definitions
-│   ├── OLangLexer.g4          # Lexical grammar
-│   └── OLangParser.g4         # Syntactic grammar
-├── include/olang/              # Public headers
-│   ├── ast/                   # Abstract Syntax Tree
-│   ├── backend/               # Code generation backends
-│   ├── frontend/              # Lexer, Parser, AST (Milestone 1.2)
-│   ├── middle/                # Optimization passes
-│   ├── runtime/               # Runtime system
-│   ├── semantic/              # Type checker, Symbol tables (Milestone 1.2)
-│   ├── stdlib/                # Standard library
-│   ├── support/               # Utility headers
-│   └── type/                  # Dimensional analysis (Milestone 1.2)
-├── scripts/                   # Build and utility scripts
-├── src/                       # Implementation files
-│   ├── ast/                   # AST implementation
-│   ├── backend/               # LLVM IR, NVPTX, CUDA
-│   ├── frontend/              # Parser, AST builder (Milestone 1.2)
-│   ├── middle/                # Optimization passes
-│   ├── runtime/               # Agent runtime, concurrency
-│   ├── semantic/              # Type checking (Milestone 1.2)
-│   └── stdlib/                # Standard library implementation
-├── tests/unit/                # Unit tests (Catch2)
-├── tools/                     # Compiler driver and utilities
-│   ├── olangc/                # Main compiler executable
-│   └── antlr4-complete.jar    # ANTLR4 tool JAR
-├── CMakeLists.txt             # Root build configuration
-├── PROJECT_STRUCTURE.md       # This file
-├── README.md                  # Project overview
-└── ROADMAP.md                 # Development timeline
-```
-
----
-
-## Core Components
-
-### Frontend (`include/olang/frontend/` & `src/frontend/`)
-
-**Purpose:** Lexical analysis, parsing, and AST construction
-
-#### Headers:
-- **`AST.h`** - Base AST node infrastructure
-- **`ASTBuilder.h`** - ANTLR4 parse tree → AST converter
-- **`ASTContext.h`** - AST memory management and allocation
-- **`ASTType.hpp`** ✅ **[M1.2]** - Type AST nodes (14 type classes, 373 lines)
-- **`Diagnostic.h`** - Error and warning messages
-- **`SourceLocation.h`** - Line/column position tracking
-
-#### Implementation:
-- **`src/frontend/ASTType.cpp`** ✅ **[M1.2]** - Type implementations (402 lines)
-- **`src/frontend/ASTBuilder.cpp`** - Parse tree visitor
-- **`src/frontend/Diagnostic.cpp`** - Error formatting
-- **`src/frontend/generated/`** - ANTLR4-generated C++ sources
-  - `OLangLexer.cpp/h`
-  - `OLangParser.cpp/h`
-  - Visitor and Listener base classes
-
-**Status:** Parser operational, AST type nodes complete (M1.2)
-
----
-
-### Semantic Analysis (`include/olang/semantic/` & `src/semantic/`)
-
-**Purpose:** Type checking, symbol resolution, semantic validation
-
-#### Headers:
-- **`TypeChecker.hpp`** ✅ **[M1.2]** - Type checker infrastructure (122 lines)
-- **`SymbolTable.hpp`** ✅ **[M1.2]** - Scoped symbol management (45 lines)
-- **`TypeEnvironment.hpp`** ✅ **[M1.2]** - Global type registry (43 lines)
-- **`ErrorReporter.hpp`** ✅ **[M1.2]** - Structured error reporting (44 lines)
-
-#### Implementation:
-- **`src/semantic/TypeChecker.cpp`** ✅ **[M1.2]** - Type checking algorithms (454 lines)
-  - Assignability checking
-  - Type unification (Hindley-Milner)
-  - Subtyping rules
-  - Dimensional consistency validation
-- **`src/semantic/SymbolTable.cpp`** ✅ **[M1.2]** - Symbol table operations (60 lines)
-- **`src/semantic/TypeEnvironment.cpp`** ✅ **[M1.2]** - Built-in type registration (82 lines)
-- **`src/semantic/ErrorReporter.cpp`** ✅ **[M1.2]** - Error formatting and output (45 lines)
-
-**Status:** Complete type system infrastructure (M1.2)
-
-**Milestone 1.2 Metrics:**
-- Total type system code: **2,011 lines**
-- Headers: **968 lines** (6 files)
-- Implementation: **1,043 lines** (5 files)
-- 100% namespace consistency (`olang::frontend`, `olang::semantic`)
-
----
-
-### Type System (`include/olang/type/`)
-
-**Purpose:** Zero-cost dimensional analysis for biological safety
-
-#### Headers:
-- **`Unit.hpp`** ✅ **[M1.2]** - Compile-time dimensional analysis (341 lines)
-  - Template metaprogramming for dimension checking
-  - SI base units (Meter, Kilogram, Second, Kelvin, etc.)
-  - Biological units (Cell, Molecule, Gene)
-  - User-defined literals (`5.0_m`, `2.0_kg`, `100_cells`)
-  - Zero runtime overhead in release builds
-
-**Key Features:**
-```cpp
-// Compile-time dimension checking
-Length distance = 5.0_m;
-Time duration = 2.0_s;
-Velocity speed = distance / duration;  // ✅ Valid
-
-// auto invalid = distance + duration;  // ❌ COMPILE ERROR
-```
-
-**Status:** Production-ready, zero-cost abstraction (M1.2)
-
----
-
-### Middle-End (`include/olang/middle/` & `src/middle/`)
-
-**Purpose:** Optimization passes, type transformations
-
-#### Headers:
-- **`middle/units/Unit.h`** - Middle-end unit representation
-- **`middle/types/`** - Type system transformations
-
-#### Implementation:
-- **`src/middle/passes/`** - Optimization passes
-- **`src/middle/types/`** - Type lowering
-- **`src/middle/units/`** - Unit normalization
-
-**Status:** Stub infrastructure, awaiting Phase 2
-
----
-
-### Runtime (`include/olang/runtime/` & `src/runtime/`)
-
-**Purpose:** Agent orchestration, concurrency, RBAC
-
-#### Agent System:
-- **`runtime/agents/Agent.h`** - Base agent interface
-- **`runtime/agents/Capability.h`** ✅ - RBAC capability system (9 tests passing)
-- **`src/runtime/agents/`** - Agent implementations
-
-#### Biological Models:
-- **`runtime/bio/IsletState.h`** ✅ - Pancreatic islet digital twin
-- **`src/runtime/bio/`** - Biological state representations
-
-#### Concurrency:
-- **`src/runtime/concurrency/`** - Thread pool, task scheduling
-- **`src/runtime/frp/`** - Functional Reactive Programming primitives
-- **`src/runtime/memory/`** - Memory management
-
-**Status:** Core RBAC complete, runtime TBD (Phase 2)
-
----
-
-### Backend (`include/olang/backend/` & `src/backend/`)
-
-**Purpose:** LLVM IR generation, CUDA kernel compilation
-
-#### LLVM Backend:
-- **`src/backend/llvm/`** - LLVM IR generation (Phase 2)
-
-#### NVPTX Backend (`|||` operator):
-- **`src/backend/nvptx/`** - PTX kernel generation (Phase 2)
-- **`src/backend/cuda/kmc_kernel.cu`** ✅ - Gillespie KMC kernel (written, awaiting link)
-
-**Status:** Kernels written, backend integration Phase 2
-
----
-
-### Standard Library (`include/olang/stdlib/` & `src/stdlib/`)
-
-**Purpose:** Built-in functions and biological primitives
-
-#### Modules:
-- **`stdlib/bio/`** - Biological utility functions
-- **`stdlib/collections/`** - Container operations
-- **`stdlib/math/`** - Mathematical functions
-
-**Status:** Stub, awaits type system integration
-
----
-
-### Testing (`tests/unit/`)
-
-**Framework:** Catch2 v3.7.1 (auto-fetched)
-
-#### Current Tests:
-- **`middle/test_unit_dimensional_analysis.cpp`** ✅ - Unit<T> tests (8 passing)
-- **`runtime/test_capability_rbac.cpp`** ✅ - RBAC tests (9 passing)
-- **`test_type_system.cpp`** 🔧 **[M1.2 TODO]** - Type system tests (needs Catch2 conversion)
-
-**Test Command:**
-```bash
-ctest --test-dir build --output-on-failure
-```
-
-**Expected Output:**
-```
-100% tests passed, 0 tests failed out of 2
-```
-
-**Pending:** Convert M1.2's 24 type system tests to Catch2 format
-
----
-
-### Build System
-
-#### Root Configuration:
-- **`CMakeLists.txt`** ✅ **[M1.2 Updated]** - Main build configuration
-  - Adds `olang_type_system` static library
-  - Links type system to `olangc` compiler
-  - Configured for C++23, Catch2 testing
-  - ANTLR4 auto-generation at configure time
-  - Optional LLVM 18 and CUDA support
-
-#### Libraries Built:
-1. **`olang_core`** (INTERFACE) - Header-only core (Unit<T>, Capability, etc.)
-2. **`olang_type_system`** (STATIC) ✅ **[M1.2]** - Type checking infrastructure
-3. **`olang_grammar`** (STATIC) - ANTLR4-generated parser
-4. **`olangc`** (EXECUTABLE) - Compiler driver
-
----
-
-## File Count Summary
-
-| Category | Files | Lines of Code |
-|----------|-------|---------------|
-| Grammar | 2 | ~450 |
-| Frontend Headers (M1.2) | 6 | ~968 |
-| Frontend Implementation (M1.2) | 1 | ~402 |
-| Semantic Headers (M1.2) | 4 | ~254 |
-| Semantic Implementation (M1.2) | 4 | ~641 |
-| Type System (M1.2) | 1 | ~341 |
-| Runtime Headers | 3 | ~200 |
-| Tests | 2 | ~300 |
-| **Milestone 1.2 Total** | **16** | **~2,606** |
-| **Project Total (Phase 1)** | **~40** | **~5,000+** |
-
----
-
-## Namespace Organization
-
-```cpp
-namespace olang {
-  namespace frontend {     // AST, Parser, Type nodes
-    class Type;
-    class PrimitiveType;
-    class UserDefinedType;
-    // ... 14 type classes
-  }
-  
-  namespace semantic {     // Type checking, symbols
-    class TypeChecker;
-    class SymbolTable;
-    class TypeEnvironment;
-    class ErrorReporter;
-  }
-  
-  namespace type {         // Dimensional analysis
-    template<typename T, typename... Dims>
-    class Unit;
-    // SI units + biological extensions
-  }
-  
-  namespace runtime {      // Agents, concurrency
-    namespace agents {
-      class Agent;
-      class Capability;
-    }
-    namespace bio {
-      class IsletState;
-    }
-  }
-  
-  namespace backend {      // Code generation
-    namespace llvm { }
-    namespace nvptx { }
-  }
-}
+olang2/
+├── Cargo.toml                  # Rust package manifest
+├── Cargo.lock
+├── README.md
+├── ROADMAP.md
+├── PROJECT_STRUCTURE.md        # This file
+├── grammar/                    # ANTLR4 grammar (language reference)
+│   ├── OLangLexer.g4
+│   ├── OLangParser.g4
+│   └── README.md
+├── examples/
+│   └── t1dm/
+│       └── t1dm_proof_of_concept.olang
+├── src/
+│   ├── main.rs                 # Compiler driver (clap CLI)
+│   ├── lexer/
+│   │   ├── mod.rs              # Lexer wrapper and tokenise()
+│   │   └── token.rs            # Token enum (logos 0.14)
+│   ├── parser/
+│   │   ├── mod.rs              # Recursive-descent parser
+│   │   └── ast.rs              # AST node types
+│   ├── semantic/
+│   │   ├── mod.rs
+│   │   ├── type_checker.rs     # TypeChecker + TypeInferenceEngine
+│   │   ├── type_env.rs         # TypeEnvironment (built-in type registry)
+│   │   ├── symbol_table.rs     # Scoped SymbolTable
+│   │   ├── error_reporter.rs   # Structured error reporting
+│   │   └── dimensional_checker.rs
+│   ├── codegen/
+│   │   ├── mod.rs
+│   │   └── ir_gen.rs           # Inkwell LLVM 20 IR generator
+│   └── backend/
+│       └── cuda/
+│           └── kmc_kernel.cu   # Gillespie KMC kernel (Phase 2)
+└── .github/
+    ├── workflows/release.yml
+    └── ISSUE_TEMPLATE/
 ```
 
 ---
 
-## Key Design Patterns
+## Compiler pipeline
 
-### Visitor Pattern (AST Traversal)
-```cpp
-class TypeVisitor {
-  virtual void visit(const PrimitiveType& type) = 0;
-  virtual void visit(const UserDefinedType& type) = 0;
-  // ... all type classes
-};
 ```
-
-### RAII (Memory Management)
-- All AST nodes use `std::unique_ptr`
-- No raw pointers, no manual `delete`
-- Exception-safe resource management
-
-### Template Metaprogramming (Zero-Cost Abstraction)
-```cpp
-template <typename T, typename... Dims>
-class Unit {
-  // Compile-time dimension checking
-  // Erases to raw T in release builds
-};
-```
-
-### Double Dispatch (Type-Specific Operations)
-```cpp
-void Type::accept(TypeVisitor& visitor) const {
-  visitor.visit(*this);  // Polymorphic dispatch
-}
+source.olang
+    │
+    ▼
+lexer/token.rs        Logos-based tokeniser → Vec<Spanned<Token>>
+    │
+    ▼
+parser/mod.rs         Recursive-descent → Program { stmts: Vec<Stmt> }
+    │
+    ▼
+semantic/             Type checker, symbol resolution, dimensional checks
+    │
+    ▼
+codegen/ir_gen.rs     Inkwell LLVM 20 → Module (emitted as IR or object)
 ```
 
 ---
 
-## Build Targets
+## Key source files
 
-```bash
-# Core libraries
-make olang_core          # Header-only utilities
-make olang_type_system   # Type checker (M1.2)
-make olang_grammar       # ANTLR4 parser
+### `src/main.rs`
 
-# Executables
-make olangc              # Compiler driver
+Compiler driver. Accepts one `.olang` source file and the flags below. Chains the four pipeline stages in order.
 
-# Tests
-make test_units          # Dimensional analysis tests
-make test_rbac           # RBAC capability tests
-make test_type_system    # Type system tests (when converted)
+```
+olangc [options] <source.olang>
 
-# All
-make -j$(nproc)          # Build everything in parallel
+  --emit-ast       Print parsed AST; stop before codegen
+  --emit-ir        Emit LLVM IR text; stop before object emission
+  --verify-only    Semantic checks only; no code generation
+  --opt <0-3>      Optimisation level (default 2)
+  -o <file>        Output file
 ```
 
 ---
 
-## Development Workflow
+### `src/lexer/token.rs`
 
-### 1. Grammar Changes
-```bash
-# Edit grammar files
-vim grammar/OLangLexer.g4
-vim grammar/OLangParser.g4
+`Token` enum generated by [logos 0.14](https://docs.rs/logos). Notable details:
 
-# Regenerate (automatic on next build)
-cmake --build build
-```
-
-### 2. Type System Changes
-```bash
-# Edit headers
-vim include/olang/frontend/ASTType.hpp
-vim include/olang/semantic/TypeChecker.hpp
-
-# Edit implementation
-vim src/frontend/ASTType.cpp
-vim src/semantic/TypeChecker.cpp
-
-# Rebuild type system library
-cmake --build build --target olang_type_system
-```
-
-### 3. Running Tests
-```bash
-# Run all tests
-ctest --test-dir build --output-on-failure
-
-# Run specific test
-./build/test_units
-./build/test_rbac
-```
+- `Wildcard` has `priority = 3` to beat the `Id` regex for `_`
+- `DecimalLiteral` has `priority = 3`; `IntLiteral` has `priority = 2` (no ambiguity between `1.0` and `1`)
+- Integer and float literals accept underscore digit separators (`1_000_000`)
+- `MultilineString` uses a logos callback (`lex_multiline_string`) because logos does not support non-greedy `.*?`
+- `StreamType` (`Stream`, uppercase) is a distinct token from `Stream` keyword (lowercase) to avoid conflicts
 
 ---
 
-## Milestone Progress
+### `src/parser/ast.rs`
 
-### ✅ Milestone 1.1: Grammar Definition (January 2026)
-- ANTLR4 lexer and parser grammars
-- Agent orchestration keywords
-- LTL verification syntax
-- SMT solver syntax
+All AST node types. Key enums:
 
-### ✅ Milestone 1.2: Type System Foundation (February 2026)
-- Complete AST type hierarchy (14 classes)
-- Type checker with symbol tables
-- Zero-cost dimensional analysis
-- 2,011 lines of production code
-- 100% namespace consistency
-
-### 🔄 Milestone 1.3: Expression Type Checking (March 2026)
-- AST-to-Type mapping
-- Expression type inference
-- Constraint solving
-- Integration tests with .olang files
-
-### 📋 Milestone 1.4: RBAC Capability System (April 2026)
-- Agent capability enforcement
-- Runtime capability checks
-- Integration with type checker
-
-### 📋 Milestone 1.5: LTL Verification Framework (May 2026)
-- LTL formula parser
-- Temporal logic evaluator
-- Proof obligation generator
-
-### 📋 Milestone 1.6: Basic LLVM Integration (June 2026)
-- LLVM IR generation
-- Type lowering
-- Simple expression compilation
+| Type | Variants |
+|------|----------|
+| `Type` | Primitive, UserDefined, Pipeline, List, Map, Set, Stream, Future, Result, Option, Provenance, Function, Union, Optional |
+| `ExprKind` | Lit, Ident, Qualified, Binary, Unary, Ternary, Call, Member, Index, List, Object, Lambda, Block, Match, 19 functional combinators, Always/Eventually/During/Until/When (LTL), Try, Mutation, Range |
+| `StmtKind` | Import, Binding, Function, Pipeline, TypeDecl, AnnotationType, Annotation, Agent, Solver, Proof, Expr, Emit, Signal, Assert, Assign |
+| `Pattern` | Wildcard, Literal, Ident, ObjectDestruct, ListDestruct, Tuple, Named, Range, Type, Guard, Or |
 
 ---
 
-## Next Steps
+### `src/parser/mod.rs`
 
-1. **Convert type system tests to Catch2** - Milestone 1.2 completion
-2. **Begin Milestone 1.3** - Expression type checking
-3. **ANTLR4 integration** - Wire parser to type system
-4. **Update documentation** - API docs with Doxygen
+Hand-written recursive-descent parser (~1,500 lines). Expression precedence (low → high):
+
+```
+parse_expression          functional combinator dispatch
+parse_lambda_or_pipeline
+parse_pipeline_expr       ~> |||
+parse_null_coalesce_expr  ??
+parse_ternary_expr        ? :
+parse_logical_or_expr     || or
+parse_logical_and_expr    && and
+parse_equality_expr       == !=
+parse_relational_expr     < <= > >= within during until in
+parse_range_expr          .. ..= ..<
+parse_additive_expr       + -
+parse_multiplicative_expr * / %
+parse_unary_expr          ! - always eventually
+parse_postfix_expr        () . [] ?
+parse_primary_expr        literals, identifiers, (, [, {, when, match
+```
+
+Notable parsing decisions:
+- Combinator keywords (`filter`, `map`, `sort_by`, etc.) are valid as identifiers in pipeline RHS position so `editCandidates ~> filter(pred)` parses as a call expression
+- `token_as_name()` allows type-keyword identifiers (`List`, `Map`, etc.) in qualified import paths
+- Agent and solver member semicolons are optional
+- `emit` and `signal` are valid inside block bodies
 
 ---
 
-**Last Updated:** February 17, 2026  
-**Maintainer:** Scott Eugene Davis  
-**Status:** Phase 1 in progress, on track for Sierra College → UC Davis transition (2027)
+### `src/codegen/ir_gen.rs`
+
+[Inkwell](https://github.com/TheDan64/inkwell) wrapper targeting LLVM 20.
+
+**LLVM 20 opaque pointer compatibility:** Every variable allocation is stored as a `VarSlot<'ctx>` pairing the `PointerValue` with its `BasicTypeEnum`, so `build_load` can receive an explicit type argument (required since `get_element_type()` was removed in LLVM 15+).
+
+**Type mapping:**
+
+| OLang type | LLVM type |
+|-----------|-----------|
+| `int`, `long` | `i64` |
+| `float` | `f32` |
+| `double` | `f64` |
+| `bool` | `i1` |
+| `char` | `i8` |
+| `string`, `null`, `any`, `never` | opaque `ptr` |
+| `List<T>`, `Map<K,V>`, etc. | opaque `ptr` (Phase 2 runtime) |
+
+**Global initialisation pattern:** Top-level `let` bindings become LLVM globals initialised to zero. Each binding generates a `void @__init_<name>()` function. `main()` calls all `__init_*` functions in source order.
+
+---
+
+### `src/backend/cuda/kmc_kernel.cu`
+
+Gillespie Kinetic Monte Carlo CUDA kernel. Each thread simulates one independent islet trajectory. Written and awaiting Phase 2 linkage to the `|||` operator lowering pass.
+
+---
+
+## Grammar reference
+
+`grammar/OLangLexer.g4` and `grammar/OLangParser.g4` are the original ANTLR4 grammars kept as a language specification reference. They are **not used** by the Rust build.

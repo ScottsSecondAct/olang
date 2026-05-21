@@ -1,0 +1,19 @@
+[package]
+name = "olangc"
+version = "0.1.0"
+edition = "2021"
+description = "OLang compiler — Rust port with Inkwell LLVM IR generation"
+
+[[bin]]
+name = "olangc"
+path = "src/main.rs"
+
+[dependencies]
+inkwell = { version = "0.9", features = ["llvm20-1-prefer-dynamic"] }
+logos = "0.14"
+thiserror = "1"
+clap = { version = "4", features = ["derive"] }
+
+[profile.release]
+opt-level = 3
+lto = true
