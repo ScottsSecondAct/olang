@@ -10,7 +10,6 @@ use inkwell::context::Context;
 
 use crate::{
     codegen::IrGen,
-    lexer::tokenize,
     parser::{ast::Program, parse},
     semantic::{ErrorReporter, TypeChecker, TypeEnvironment},
 };
@@ -59,17 +58,8 @@ fn main() {
         }
     };
 
-    // ── Lex ──────────────────────────────────────────────────────────────
-    let tokens = match tokenize(&source) {
-        Ok(ts) => ts,
-        Err(e) => {
-            eprintln!("olangc: lex error: {e}");
-            process::exit(1);
-        }
-    };
-
     // ── Parse ────────────────────────────────────────────────────────────
-    let program: Program = match parse(tokens) {
+    let program: Program = match parse(&source) {
         Ok(p) => p,
         Err(e) => {
             eprintln!("olangc: parse error: {e}");

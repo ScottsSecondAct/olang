@@ -283,7 +283,7 @@ pub enum StmtKind {
     // Statements
     Expr(Expr),
     Emit(Expr),
-    Signal(Expr),
+    Signal(Expr, Expr),
     Assert(Expr),
     Assign { target: Vec<String>, value: Expr },
 }

@@ -10,7 +10,8 @@ path = "src/main.rs"
 
 [dependencies]
 inkwell = { version = "0.9", features = ["llvm20-1-prefer-dynamic"] }
-logos = "0.14"
+pest       = "2"
+pest_derive = "2"
 thiserror = "1"
 clap = { version = "4", features = ["derive"] }
 

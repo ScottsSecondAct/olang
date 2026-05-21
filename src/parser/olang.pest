@@ -1,0 +1,456 @@
+// OLang PEG Grammar — pest 2
+// ─────────────────────────────────────────────────────────────────────────────
+
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+COMMENT    = _{ "//" ~ (!"\n" ~ ANY)*
+              | "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+
+// ── Identifier helpers ───────────────────────────────────────────────────────
+
+id_char = _{ ASCII_ALPHANUMERIC | "_" }
+
+// ── Keywords ─────────────────────────────────────────────────────────────────
+// Each keyword has an atomic boundary rule (kw_X_b) that checks the word
+// boundary without whitespace insertion, and a silent wrapper (kw_X) that uses
+// a positive lookahead so that no pair is emitted in the CST.
+
+kw_import_b     = @{ "import"     ~ !id_char }   kw_import     = _{ &kw_import_b     ~ "import"     }
+kw_from_b       = @{ "from"       ~ !id_char }   kw_from       = _{ &kw_from_b       ~ "from"       }
+kw_let_b        = @{ "let"        ~ !id_char }   kw_let        = _{ &kw_let_b        ~ "let"        }
+kw_as_b         = @{ "as"         ~ !id_char }   kw_as         = _{ &kw_as_b         ~ "as"         }
+kw_with_b       = @{ "with"       ~ !id_char }   kw_with       = _{ &kw_with_b       ~ "with"       }
+kw_type_b       = @{ "type"       ~ !id_char }   kw_type       = _{ &kw_type_b       ~ "type"       }
+kw_extends_b    = @{ "extends"    ~ !id_char }   kw_extends    = _{ &kw_extends_b    ~ "extends"    }
+kw_annotation_b = @{ "annotation" ~ !id_char }   kw_annotation = _{ &kw_annotation_b ~ "annotation" }
+kw_annotated_b  = @{ "annotated"  ~ !id_char }   kw_annotated  = _{ &kw_annotated_b  ~ "annotated"  }
+kw_def_b        = @{ "def"        ~ !id_char }   kw_def        = _{ &kw_def_b        ~ "def"        }
+kw_match_b      = @{ "match"      ~ !id_char }   kw_match      = _{ &kw_match_b      ~ "match"      }
+kw_when_b       = @{ "when"       ~ !id_char }   kw_when       = _{ &kw_when_b       ~ "when"       }
+kw_where_b      = @{ "where"      ~ !id_char }   kw_where      = _{ &kw_where_b      ~ "where"      }
+kw_in_b         = @{ "in"         ~ !id_char }   kw_in         = _{ &kw_in_b         ~ "in"         }
+kw_on_b         = @{ "on"         ~ !id_char }   kw_on         = _{ &kw_on_b         ~ "on"         }
+kw_agent_b      = @{ "agent"      ~ !id_char }   kw_agent      = _{ &kw_agent_b      ~ "agent"      }
+kw_capability_b = @{ "capability" ~ !id_char }   kw_capability = _{ &kw_capability_b ~ "capability" }
+kw_proof_b      = @{ "proof"      ~ !id_char }   kw_proof      = _{ &kw_proof_b      ~ "proof"      }
+kw_invariant_b  = @{ "invariant"  ~ !id_char }   kw_invariant  = _{ &kw_invariant_b  ~ "invariant"  }
+kw_assert_b     = @{ "assert"     ~ !id_char }   kw_assert     = _{ &kw_assert_b     ~ "assert"     }
+kw_always_b     = @{ "always"     ~ !id_char }   kw_always     = _{ &kw_always_b     ~ "always"     }
+kw_eventually_b = @{ "eventually" ~ !id_char }   kw_eventually = _{ &kw_eventually_b ~ "eventually" }
+kw_during_b     = @{ "during"     ~ !id_char }   kw_during     = _{ &kw_during_b     ~ "during"     }
+kw_until_b      = @{ "until"      ~ !id_char }   kw_until      = _{ &kw_until_b      ~ "until"      }
+kw_within_b     = @{ "within"     ~ !id_char }   kw_within     = _{ &kw_within_b     ~ "within"     }
+kw_solver_b     = @{ "solver"     ~ !id_char }   kw_solver     = _{ &kw_solver_b     ~ "solver"     }
+kw_satisfy_b    = @{ "satisfy"    ~ !id_char }   kw_satisfy    = _{ &kw_satisfy_b    ~ "satisfy"    }
+kw_minimize_b   = @{ "minimize"   ~ !id_char }   kw_minimize   = _{ &kw_minimize_b   ~ "minimize"   }
+kw_maximize_b   = @{ "maximize"   ~ !id_char }   kw_maximize   = _{ &kw_maximize_b   ~ "maximize"   }
+kw_variable_b   = @{ "variable"   ~ !id_char }   kw_variable   = _{ &kw_variable_b   ~ "variable"   }
+kw_stream_b     = @{ "stream"     ~ !id_char }   kw_stream     = _{ &kw_stream_b     ~ "stream"     }
+kw_rule_b       = @{ "rule"       ~ !id_char }   kw_rule       = _{ &kw_rule_b       ~ "rule"       }
+kw_emit_b       = @{ "emit"       ~ !id_char }   kw_emit       = _{ &kw_emit_b       ~ "emit"       }
+kw_signal_b     = @{ "signal"     ~ !id_char }   kw_signal     = _{ &kw_signal_b     ~ "signal"     }
+kw_map_b        = @{ "map"        ~ !id_char }   kw_map        = _{ &kw_map_b        ~ "map"        }
+kw_filter_b     = @{ "filter"     ~ !id_char }   kw_filter     = _{ &kw_filter_b     ~ "filter"     }
+kw_reduce_b     = @{ "reduce"     ~ !id_char }   kw_reduce     = _{ &kw_reduce_b     ~ "reduce"     }
+kw_foreach_b    = @{ "foreach"    ~ !id_char }   kw_foreach    = _{ &kw_foreach_b    ~ "foreach"    }
+kw_group_by_b   = @{ "group_by"   ~ !id_char }   kw_group_by   = _{ &kw_group_by_b   ~ "group_by"   }
+kw_flatmap_b    = @{ "flatmap"    ~ !id_char }   kw_flatmap    = _{ &kw_flatmap_b    ~ "flatmap"    }
+kw_zip_b        = @{ "zip"        ~ !id_char }   kw_zip        = _{ &kw_zip_b        ~ "zip"        }
+kw_partition_b  = @{ "partition"  ~ !id_char }   kw_partition  = _{ &kw_partition_b  ~ "partition"  }
+kw_take_b       = @{ "take"       ~ !id_char }   kw_take       = _{ &kw_take_b       ~ "take"       }
+kw_drop_b       = @{ "drop"       ~ !id_char }   kw_drop       = _{ &kw_drop_b       ~ "drop"       }
+kw_take_while_b = @{ "take_while" ~ !id_char }   kw_take_while = _{ &kw_take_while_b ~ "take_while" }
+kw_drop_while_b = @{ "drop_while" ~ !id_char }   kw_drop_while = _{ &kw_drop_while_b ~ "drop_while" }
+kw_sort_by_b    = @{ "sort_by"    ~ !id_char }   kw_sort_by    = _{ &kw_sort_by_b    ~ "sort_by"    }
+kw_distinct_b   = @{ "distinct"   ~ !id_char }   kw_distinct   = _{ &kw_distinct_b   ~ "distinct"   }
+kw_count_b      = @{ "count"      ~ !id_char }   kw_count      = _{ &kw_count_b      ~ "count"      }
+kw_find_b       = @{ "find"       ~ !id_char }   kw_find       = _{ &kw_find_b       ~ "find"       }
+kw_any_b        = @{ "any"        ~ !id_char }   kw_any        = _{ &kw_any_b        ~ "any"        }
+kw_all_b        = @{ "all"        ~ !id_char }   kw_all        = _{ &kw_all_b        ~ "all"        }
+kw_join_b       = @{ "join"       ~ !id_char }   kw_join       = _{ &kw_join_b       ~ "join"       }
+kw_window_b     = @{ "window"     ~ !id_char }   kw_window     = _{ &kw_window_b     ~ "window"     }
+kw_chunk_b      = @{ "chunk"      ~ !id_char }   kw_chunk      = _{ &kw_chunk_b      ~ "chunk"      }
+kw_scan_b       = @{ "scan"       ~ !id_char }   kw_scan       = _{ &kw_scan_b       ~ "scan"       }
+kw_collect_b    = @{ "collect"    ~ !id_char }   kw_collect    = _{ &kw_collect_b    ~ "collect"    }
+kw_null_b       = @{ "null"       ~ !id_char }   kw_null       = _{ &kw_null_b       ~ "null"       }
+kw_true_b       = @{ "true"       ~ !id_char }   kw_true       = _{ &kw_true_b       ~ "true"       }
+kw_false_b      = @{ "false"      ~ !id_char }   kw_false      = _{ &kw_false_b      ~ "false"      }
+kw_and_b        = @{ "and"        ~ !id_char }   kw_and        = _{ &kw_and_b        ~ "and"        }
+kw_or_b         = @{ "or"         ~ !id_char }   kw_or         = _{ &kw_or_b         ~ "or"         }
+
+// Type-name keywords (uppercase)
+kw_List_b       = @{ "List"       ~ !id_char }   kw_List       = _{ &kw_List_b       ~ "List"       }
+kw_Map_b        = @{ "Map"        ~ !id_char }   kw_Map        = _{ &kw_Map_b        ~ "Map"        }
+kw_Set_b        = @{ "Set"        ~ !id_char }   kw_Set        = _{ &kw_Set_b        ~ "Set"        }
+kw_Pipeline_b   = @{ "Pipeline"   ~ !id_char }   kw_Pipeline   = _{ &kw_Pipeline_b   ~ "Pipeline"   }
+kw_Stream_b     = @{ "Stream"     ~ !id_char }   kw_Stream     = _{ &kw_Stream_b     ~ "Stream"     }
+kw_Future_b     = @{ "Future"     ~ !id_char }   kw_Future     = _{ &kw_Future_b     ~ "Future"     }
+kw_Result_b     = @{ "Result"     ~ !id_char }   kw_Result     = _{ &kw_Result_b     ~ "Result"     }
+kw_Option_b     = @{ "Option"     ~ !id_char }   kw_Option     = _{ &kw_Option_b     ~ "Option"     }
+kw_Provenance_b = @{ "Provenance" ~ !id_char }   kw_Provenance = _{ &kw_Provenance_b ~ "Provenance" }
+
+// All reserved words combined — used to guard ident
+keyword = _{
+    kw_import | kw_from | kw_let | kw_as | kw_with | kw_type | kw_extends
+  | kw_annotation | kw_annotated | kw_def | kw_match | kw_when | kw_where
+  | kw_in | kw_on | kw_agent | kw_capability | kw_proof | kw_invariant
+  | kw_assert | kw_always | kw_eventually | kw_during | kw_until | kw_within
+  | kw_solver | kw_satisfy | kw_minimize | kw_maximize | kw_variable
+  | kw_stream | kw_rule | kw_emit | kw_signal
+  | kw_map | kw_filter | kw_reduce | kw_foreach | kw_group_by | kw_flatmap
+  | kw_zip | kw_partition | kw_take | kw_drop | kw_take_while | kw_drop_while
+  | kw_sort_by | kw_distinct | kw_count | kw_find | kw_any | kw_all
+  | kw_join | kw_window | kw_chunk | kw_scan | kw_collect
+  | kw_null | kw_true | kw_false | kw_and | kw_or
+}
+
+ident = @{ !keyword ~ (ASCII_ALPHA | "_") ~ id_char* }
+
+name_part      = @{ (ASCII_ALPHA | "_") ~ id_char* }
+qualified_name =  { name_part ~ ("." ~ name_part)* }
+
+// ── Literals ─────────────────────────────────────────────────────────────────
+
+int_lit  = @{ ASCII_DIGIT ~ (ASCII_DIGIT | "_")* ~ ^"l"? }
+float_lit = @{
+    ASCII_DIGIT ~ (ASCII_DIGIT | "_")* ~ "." ~ ASCII_DIGIT ~ (ASCII_DIGIT | "_")*
+        ~ (^"e" ~ ("+" | "-")? ~ ASCII_DIGIT+)? ~ (^"f" | ^"d")?
+  | ASCII_DIGIT ~ (ASCII_DIGIT | "_")* ~ ^"e" ~ ("+" | "-")? ~ ASCII_DIGIT+ ~ (^"f" | ^"d")?
+  | ASCII_DIGIT ~ (ASCII_DIGIT | "_")* ~ (^"f" | ^"d")
+}
+bool_lit = { kw_true | kw_false }
+null_lit = { kw_null }
+string_lit = @{ "\"" ~ (!"\"" ~ ("\\" ~ ANY | ANY))* ~ "\"" }
+raw_string = @{ "r\"" ~ (!"\"" ~ ANY)* ~ "\"" }
+multiline_string = @{ "\"\"\"" ~ (!"\"\"\"" ~ ANY)* ~ "\"\"\"" }
+
+literal = { float_lit | int_lit | bool_lit | null_lit | multiline_string | raw_string | string_lit }
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+ty           = { optional_type ~ (union_op ~ optional_type)* }
+union_op     = _{ "|" }
+optional_type = { base_type ~ opt_mark? }
+opt_mark     = { "?" }
+
+base_type = {
+    primitive_type
+  | list_type | map_type | set_type | stream_type | future_type
+  | result_type | option_type | provenance_type | pipeline_type
+  | function_type | paren_type | user_type
+}
+
+primitive_type = {
+    "int" ~ !id_char | "long" ~ !id_char | "float" ~ !id_char | "double" ~ !id_char
+  | "bool" ~ !id_char | "char" ~ !id_char | "string" ~ !id_char
+  | "any_type" ~ !id_char | "never_type" ~ !id_char
+}
+
+list_type       = { kw_List       ~ "<" ~ ty ~ ">" }
+map_type        = { kw_Map        ~ "<" ~ ty ~ "," ~ ty ~ ">" }
+set_type        = { kw_Set        ~ "<" ~ ty ~ ">" }
+stream_type     = { kw_Stream     ~ "<" ~ ty ~ ">" }
+future_type     = { kw_Future     ~ "<" ~ ty ~ ">" }
+result_type     = { kw_Result     ~ "<" ~ ty ~ "," ~ ty ~ ">" }
+option_type     = { kw_Option     ~ "<" ~ ty ~ ">" }
+provenance_type = { kw_Provenance ~ "<" ~ ty ~ ">" }
+pipeline_type   = { kw_Pipeline   ~ "<" ~ ty ~ "->" ~ ty ~ ">" }
+function_type   = { "(" ~ type_list? ~ ")" ~ "->" ~ ty }
+paren_type      = { "(" ~ ty ~ ")" }
+user_type       = { qualified_name ~ ("<" ~ type_list ~ ">")? }
+
+type_list = { ty ~ ("," ~ ty)* }
+
+generic_params     = { "<" ~ generic_param ~ ("," ~ generic_param)* ~ ">" }
+generic_param      = { ident ~ generic_constraint* }
+generic_constraint = { ":" ~ ty | "=" ~ ty | kw_extends ~ ty }
+
+where_clause = { kw_where ~ constraint ~ ("," ~ constraint)* }
+constraint   = {
+    ident ~ ":" ~ ty
+  | ident ~ "=" ~ ty
+  | ident ~ kw_extends ~ ty
+  | expr
+}
+
+typed_field      = { ident ~ ":" ~ ty }
+typed_field_list = { typed_field ~ ("," ~ typed_field)* }
+typed_param      = { ident ~ ":" ~ ty }
+typed_param_list = { typed_param ~ ("," ~ typed_param)* }
+
+// ── Patterns ──────────────────────────────────────────────────────────────────
+
+pattern    = { primary_pattern ~ (or_op ~ primary_pattern)* }
+or_op      = _{ "|" }
+
+// simple_pattern: no guard/type annotation — avoids left-recursion
+simple_pattern = {
+    wildcard_pattern | lit_pattern | ident_pattern | "(" ~ pattern ~ ")"
+}
+
+primary_pattern = {
+    guard_pattern      // simple_pattern kw_when expr
+  | type_pattern       // simple_pattern ":" ty
+  | range_pattern
+  | named_destruct
+  | obj_destruct
+  | list_destruct
+  | tuple_destruct
+  | wildcard_pattern
+  | lit_pattern
+  | ident_pattern
+  | "(" ~ pattern ~ ")"
+}
+
+wildcard_pattern = { "_" ~ !id_char }
+lit_pattern      = { literal }
+ident_pattern    = { ident }
+range_pattern    = { literal ~ range_op ~ literal }
+type_pattern     = { simple_pattern ~ ":" ~ ty }
+guard_pattern    = { simple_pattern ~ kw_when ~ expr }
+obj_destruct     = { "{" ~ (pattern_field ~ ("," ~ pattern_field)*)? ~ ","? ~ "}" }
+list_destruct    = { "[" ~ (pattern ~ ("," ~ pattern)*)? ~ ","? ~ "]" }
+tuple_destruct   = { "(" ~ pattern ~ ("," ~ pattern)+ ~ ","? ~ ")" }
+named_destruct   = { qualified_name ~ "{" ~ (pattern_field ~ ("," ~ pattern_field)*)? ~ ","? ~ "}" }
+pattern_field    = { ident ~ ":" ~ pattern | ident | wildcard_pattern }
+
+// ── Expressions ───────────────────────────────────────────────────────────────
+
+expr = {
+    combinator_expr
+  | lambda_expr
+  | pipeline_expr
+}
+
+// ── Functional combinators ────────────────────────────────────────────────────
+
+combinator_expr = {
+    map_expr | filter_expr | reduce_expr | foreach_expr | group_by_expr
+  | flatmap_expr | zip_expr | partition_expr | take_expr | drop_expr
+  | take_while_expr | drop_while_expr | sort_by_expr | distinct_expr
+  | count_expr | find_expr | any_expr | all_expr | join_expr | window_expr
+  | chunk_expr | scan_expr | collect_expr
+}
+
+map_expr        = { kw_map       ~ "(" ~ expr ~ "," ~ expr ~ ")" }
+filter_expr     = { kw_filter    ~ "(" ~ expr ~ "," ~ expr ~ ")" }
+reduce_expr     = { kw_reduce    ~ "(" ~ expr ~ "," ~ expr ~ ("," ~ expr)? ~ ")" }
+foreach_expr    = { kw_foreach   ~ "(" ~ expr ~ "," ~ expr ~ ")" }
+group_by_expr   = { kw_group_by  ~ "(" ~ expr ~ "," ~ expr ~ ")" }
+flatmap_expr    = { kw_flatmap   ~ "(" ~ expr ~ "," ~ expr ~ ")" }
+zip_expr        = { kw_zip       ~ "(" ~ expr ~ "," ~ expr ~ ("," ~ expr)? ~ ")" }
+partition_expr  = { kw_partition ~ "(" ~ expr ~ "," ~ expr ~ ")" }
+take_expr       = { kw_take      ~ "(" ~ expr ~ "," ~ expr ~ ")" }
+drop_expr       = { kw_drop      ~ "(" ~ expr ~ "," ~ expr ~ ")" }
+take_while_expr = { kw_take_while ~ "(" ~ expr ~ "," ~ expr ~ ")" }
+drop_while_expr = { kw_drop_while ~ "(" ~ expr ~ "," ~ expr ~ ")" }
+sort_by_expr    = { kw_sort_by   ~ "(" ~ expr ~ "," ~ expr ~ ")" }
+distinct_expr   = { kw_distinct  ~ "(" ~ expr ~ ("," ~ expr)? ~ ")" }
+count_expr      = { kw_count     ~ "(" ~ expr ~ ("," ~ expr)? ~ ")" }
+find_expr       = { kw_find      ~ "(" ~ expr ~ "," ~ expr ~ ")" }
+any_expr        = { kw_any       ~ "(" ~ expr ~ "," ~ expr ~ ")" }
+all_expr        = { kw_all       ~ "(" ~ expr ~ "," ~ expr ~ ")" }
+join_expr       = { kw_join      ~ "(" ~ expr ~ "," ~ expr ~ "," ~ kw_on ~ "=" ~ expr ~ ("," ~ expr)? ~ ")" }
+window_expr     = { kw_window    ~ "(" ~ expr ~ "," ~ expr ~ ("," ~ expr)? ~ ")" }
+chunk_expr      = { kw_chunk     ~ "(" ~ expr ~ "," ~ expr ~ ")" }
+scan_expr       = { kw_scan      ~ "(" ~ expr ~ "," ~ expr ~ ("," ~ expr)? ~ ")" }
+collect_expr    = { kw_collect   ~ "(" ~ expr ~ "," ~ expr ~ "," ~ expr ~ ")" }
+
+// ── Lambda ────────────────────────────────────────────────────────────────────
+
+lambda_expr   = { lambda_params ~ "=>" ~ lambda_body }
+lambda_params = {
+    "(" ~ lambda_param_list? ~ ")"
+  | "{" ~ simple_destruct_fields ~ "}"
+  | "[" ~ simple_destruct_list ~ "]"
+  | ident
+}
+lambda_param_list      = { lambda_param ~ ("," ~ lambda_param)* }
+lambda_param           = { ident ~ (":" ~ ty)? }
+simple_destruct_fields = { simple_destruct_field ~ ("," ~ simple_destruct_field)* }
+simple_destruct_field  = { ident ~ ":" ~ ident | ident | wildcard_pattern }
+simple_destruct_list   = { (ident | wildcard_pattern) ~ ("," ~ (ident | wildcard_pattern))* }
+lambda_body = { block_expr | pipeline_expr }
+
+// ── Pipeline and binary operators ─────────────────────────────────────────────
+
+pipeline_expr      = { null_coalesce_expr ~ (pipeline_op ~ null_coalesce_expr)* }
+pipeline_op        = { "|||" | "~>" | "↦" }
+
+null_coalesce_expr = { ternary_expr ~ (null_coalesce_op ~ ternary_expr)* }
+null_coalesce_op   = { "??" }
+
+ternary_expr       = { logical_or_expr ~ (ternary_op ~ expr ~ ":" ~ ternary_expr)? }
+ternary_op         = _{ "?" }
+
+logical_or_expr    = { logical_and_expr ~ (or_bin_op  ~ logical_and_expr)* }
+or_bin_op          = { "||" | kw_or }
+logical_and_expr   = { equality_expr    ~ (and_bin_op ~ equality_expr)* }
+and_bin_op         = { "&&" | kw_and }
+
+equality_expr      = { relational_expr  ~ (eq_op      ~ relational_expr)* }
+eq_op              = { "==" | "!=" }
+
+relational_expr    = { range_expr ~ (rel_op ~ range_expr)* }
+rel_op             = { "<=" | ">=" | "<" | ">" | kw_within | kw_during | kw_until | kw_in }
+
+range_expr         = { additive_expr ~ (range_op ~ additive_expr)? }
+range_op           = { "..=" | "..<" | ".." }
+
+additive_expr      = { multiplicative_expr ~ (add_op ~ multiplicative_expr)* }
+add_op             = { "+" | "-" }
+
+multiplicative_expr = { unary_expr ~ (mul_op ~ unary_expr)* }
+mul_op             = { "*" | "/" | "%" }
+
+unary_expr = {
+    unary_op ~ unary_expr
+  | postfix_expr
+}
+unary_op = { "!" | "-" | kw_always | kw_eventually }
+
+postfix_expr   = { primary_expr ~ postfix_suffix* }
+postfix_suffix = {
+    member_call   // .ident (args?)
+  | index_suffix  // [expr]
+  | call_suffix   // (args)
+  | try_suffix    // ?
+}
+member_call  = { "." ~ ident ~ call_args? }
+index_suffix = { "[" ~ expr ~ "]" }
+call_suffix  = { call_args }
+try_suffix   = { "?" ~ !("?") }   // distinguish from ?? (null-coalesce)
+
+call_args = { "(" ~ arg_list? ~ ")" }
+arg_list  = { argument ~ ("," ~ argument)* }
+argument  = { named_arg | lambda_expr | expr }
+named_arg = { ident ~ "=" ~ !(">" | "=") ~ expr }
+
+// ── Primary expressions ───────────────────────────────────────────────────────
+
+primary_expr = {
+    literal
+  | when_expr
+  | match_expr
+  | list_expr
+  | object_or_block
+  | "(" ~ expr ~ ")"
+  | combinator_ident
+  | type_name_ident
+  | qualified_name
+}
+
+combinator_ident = {
+    kw_map | kw_filter | kw_reduce | kw_foreach | kw_group_by | kw_flatmap
+  | kw_zip | kw_partition | kw_take | kw_drop | kw_take_while | kw_drop_while
+  | kw_sort_by | kw_distinct | kw_count | kw_find | kw_any | kw_all
+  | kw_join | kw_window | kw_chunk | kw_scan | kw_collect
+}
+
+type_name_ident = {
+    kw_List | kw_Map | kw_Set | kw_Pipeline | kw_Stream
+  | kw_Future | kw_Result | kw_Option | kw_Provenance
+}
+
+when_expr  = { kw_when ~ expr ~ "->" ~ expr }
+match_expr = { kw_match ~ expr ~ "{" ~ match_arm ~ ("," ~ match_arm)* ~ ","? ~ "}" }
+match_arm  = { pattern ~ "=>" ~ (block_expr | expr) }
+list_expr  = { "[" ~ (expr ~ ("," ~ expr)* ~ ","?)? ~ "]" }
+
+// Try object literal first ({key: val}), else block
+object_or_block = {
+    "{" ~ object_field ~ ("," ~ object_field)* ~ ","? ~ "}"
+  | block_expr
+}
+object_field = { (string_lit | ident) ~ ":" ~ expr }
+
+block_expr = { "{" ~ block_item* ~ "}" }
+block_item = {
+    let_item    ~ semi?
+  | emit_item   ~ semi?
+  | signal_item ~ semi?
+  | expr        ~ semi?
+}
+let_item    = { kw_let    ~ ident ~ (":" ~ ty)? ~ "=" ~ expr }
+emit_item   = { kw_emit   ~ expr }
+signal_item = { kw_signal ~ expr }
+
+// ── Statements ────────────────────────────────────────────────────────────────
+
+program = { SOI ~ stmt* ~ EOI }
+semi    = _{ ";" }
+
+stmt = {
+    annotated_stmt
+  | annotation_type_decl
+  | import_stmt
+  | let_binding
+  | function_def
+  | pipeline_decl
+  | type_decl
+  | agent_decl
+  | solver_decl
+  | proof_decl
+  | emit_stmt
+  | signal_stmt
+  | assert_stmt
+  | assign_stmt
+  | expr_stmt
+}
+
+import_stmt = {
+    kw_from ~ qualified_name ~ kw_import ~ import_targets
+  | kw_import ~ dotted_as_name ~ ("," ~ dotted_as_name)*
+}
+dotted_as_name = { qualified_name ~ (kw_as ~ ident)? }
+import_targets = { "*" | import_as_name ~ ("," ~ import_as_name)* }
+import_as_name = { ident ~ (kw_as ~ ident)? }
+
+let_binding   = { kw_let  ~ ident ~ (":" ~ ty)? ~ "=" ~ expr ~ semi? }
+function_def  = { kw_def  ~ ident ~ "(" ~ typed_param_list? ~ ")" ~ "->" ~ ty ~ "=" ~ expr ~ semi? }
+pipeline_decl = { ident ~ ":" ~ "Pipeline" ~ !id_char ~ "<" ~ ty ~ "->" ~ ty ~ ">" ~ "=" ~ expr ~ semi? }
+
+type_decl = {
+    kw_type ~ ident ~ generic_params? ~ "{" ~ typed_field_list ~ "}"
+    ~ where_clause? ~ semi?
+}
+annotation_type_decl = { kw_annotation ~ ident ~ "{" ~ typed_field_list ~ "}" ~ semi? }
+annotated_stmt = {
+    kw_annotated ~ stmt ~ kw_with ~ "{"
+    ~ annotation_pair ~ ("," ~ annotation_pair)* ~ "}" ~ semi?
+}
+annotation_pair  = { ident ~ ":" ~ annotation_value }
+annotation_value = { list_lit | literal }
+list_lit         = { "[" ~ (annotation_value ~ ("," ~ annotation_value)*)? ~ "]" }
+
+agent_decl  = { kw_agent  ~ ident ~ "{" ~ agent_member*  ~ "}" }
+solver_decl = { kw_solver ~ ident ~ "{" ~ solver_member* ~ "}" }
+proof_decl  = { kw_proof  ~ ident ~ "{" ~ invariant_decl* ~ "}" }
+
+agent_member = {
+    capability_member
+  | stream_member
+  | rule_member
+  | stmt
+}
+capability_member = { kw_capability ~ ident ~ ("," ~ ident)* ~ semi? }
+stream_member     = { kw_stream ~ ident ~ ":" ~ ty ~ semi? }
+rule_member       = { kw_rule ~ (string_lit | ident) ~ "{" ~ kw_when ~ expr ~ "->" ~ block_expr ~ "}" ~ semi? }
+
+solver_member = {
+    variable_member
+  | satisfy_member
+  | minimize_member
+  | maximize_member
+}
+variable_member  = { kw_variable ~ ident ~ ":" ~ ty ~ (kw_in ~ expr)? ~ semi? }
+satisfy_member   = { kw_satisfy  ~ "{" ~ (expr ~ semi?)* ~ "}" ~ semi? }
+minimize_member  = { kw_minimize ~ expr ~ semi? }
+maximize_member  = { kw_maximize ~ expr ~ semi? }
+
+invariant_decl = { kw_invariant ~ ident ~ "{" ~ (expr ~ semi?)* ~ "}" }
+
+emit_stmt   = { kw_emit   ~ expr ~ semi? }
+signal_stmt = { kw_signal ~ expr ~ expr ~ semi? }
+assert_stmt = { kw_assert ~ "(" ~ expr ~ ")" ~ semi? }
+assign_stmt = { qualified_name ~ "=" ~ !(">" | "=") ~ expr ~ semi? }
+expr_stmt   = { expr ~ semi? }

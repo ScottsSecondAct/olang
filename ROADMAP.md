@@ -17,7 +17,7 @@ OLang development follows a three-phase timeline aligned with Scott's academic p
 
 ---
 
-## Phase 1: Foundation (2026 — Sierra College)
+## Phase 1: Foundation
 
 ### ✅ Milestone 1.1: Grammar Definition — COMPLETE
 
@@ -61,7 +61,7 @@ Full rewrite from C++ / ANTLR4 to Rust:
 
 ---
 
-## Phase 2: Orchestration & Backend (2027 — UC Davis)
+## Phase 2: Orchestration & Backend
 
 ### 📋 Milestone 2.1: Full Expression IR Lowering (Q1 2027)
 
@@ -102,7 +102,7 @@ Full rewrite from C++ / ANTLR4 to Rust:
 
 ---
 
-## Phase 3: Validation & Synthesis (2028 — PhD Rotation)
+## Phase 3: Validation & Synthesis
 
 ### 📋 Milestone 3.1: Hardware Bridge — Executor Agent (Q1 2028)
 
@@ -162,15 +162,15 @@ Overall:                   ~29% (4/11 milestones, Phase 1 done in full)
 
 ## Academic milestones
 
-### Sierra College (2026)
+### 2026
 - ✅ Milestones 1.1–1.6: Full compiler in Rust (January–May 2026)
 
-### UC Davis Transfer (2027)
+### 2027
 - Phase 2: Backend, runtime, SMT integration
 - Begin research publication process
 - Present at academic conferences (PLDI, OOPSLA, ASPLOS)
 
-### PhD Program (2028)
+### 2028
 - Phase 3: Validation & synthesis
 - Wet-lab experiments
 - Dissertation: *"Governance-as-Code for AI-Driven Biological Research"*
